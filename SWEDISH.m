@@ -62,6 +62,7 @@ dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
 % addpath 'D:\GreenTrACS\2017\GPR_Processing\MultiOffset\Save';
 % addpath '/run/media/tatemeehan/RED/GreenTrACS/2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
+addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
 % addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
 % addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
 % addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
@@ -415,8 +416,11 @@ if isSWEDISH
     xVdir = cell(nDirectHorizon,nTrace,nFiles);xToDir = cell(nDirectHorizon,nTrace,nFiles);
     VoDir = cell(nDirectHorizon,nTrace,nFiles);VoVarDir = cell(nDirectHorizon,nTrace,nFiles);
     toDir = cell(nDirectHorizon,nTrace,nFiles);toVarDir = cell(nDirectHorizon,nTrace,nFiles);
-    DirVelocity = cell(nDirectHorizon,nFiles);
-    xRhoDir = cell(nDirectHorizon,nTrace,nFiles);DirDensity = cell(nDirectHorizon,nFiles); 
+    DirVelocity = cell(nDirectHorizon,nFiles);RhoDir = cell(nDirectHorizon,nTrace,nFiles);
+    xRhoDir = cell(nDirectHorizon,nTrace,nFiles);DirDensity = cell(nDirectHorizon,nFiles);
+    xDepthDir = cell(nDirectHorizon,nTrace,nFiles);DepthDir  = cell(nDirectHorizon,nTrace,nFiles);
+    DepthVarDir = cell(nDirectHorizon,nTrace,nFiles);RhoDirVar  = cell(nDirectHorizon,nTrace,nFiles);
+    CovDepthRhoDir = cell(nDirectHorizon,nTrace,nFiles);
     deltaT = cell(nFiles,nTrace);ResGatherDirPicks = cell(nDirectHorizon,nTrace,nFiles);
     AirTo = cell(nFiles,nTrace); xAirTo = cell(nFiles,nTrace);
     
@@ -456,126 +460,198 @@ if isSWEDISH
         looper = 1:length(Radar{ii});
         % Concatenate Air Wave Picks
         for dh = 1:nDirectHorizon
-        % Concatenate Primary Reflection Picks for Horizon hh
-        GatherDirectPicks{dh,ii} = cat(2,DirectFBpick{:,dh,ii});
-        DirectPicks = GatherDirectPicks{dh,ii};
-        % Air Wave Velocity Analysis
-        parfor (jj = looper, nWorkers)
-            %         for jj = 1:length(Radar{ii})
+            % Concatenate Primary Reflection Picks for Horizon hh
+            GatherDirectPicks{dh,ii} = cat(2,DirectFBpick{:,dh,ii});
+            DirectPicks = GatherDirectPicks{dh,ii};
+            % Air Wave Velocity Analysis
             if dh  == 1;
-                % Extract Picks
-                AirPick = DirectPicks(jj,:);
-                
-                for kk = 1:100 % 100 Random Draws
-                    % Cross-Validation for Surface Velocity Estimation 7-28-17
-                    nCut = randsample([0,1,2],1);
-                    cutChan = randsample(liveChan,nCut);
-                    xvalChan = liveChan;
-                    cutIx = find(ismember(liveChan,cutChan));
-                    xvalChan(cutIx) = [];
-                    xvalIx = find(ismember(liveChan,xvalChan));
+%                 for jj = looper
+                 parfor (jj = looper, nWorkers)
+                    %         for jj = 1:length(Radar{ii})
                     
-                    xvalAirPick = AirPick(xvalIx);
-                    xvalOffset = offsetArray(xvalIx);
+                    % Extract Picks
+                    AirPick = DirectPicks(jj,:);
                     
-                    % Compute Air Wave Arrival Velocity and Intercept Time
-                    % OLS Scheme
-                    %                 [xVair{ii,jj}(kk,1), ~] = DirectWave(xvalOffset,xvalAirPick);
-                    % IRLS Scheme
-                    [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWaveIrls(xvalOffset,xvalAirPick);
+                    for kk = 1:250 % 250 Random Draws
+                        % Cross-Validation for Surface Velocity Estimation 7-28-17
+                        nCut = randsample([0,1,2],1);
+                        cutChan = randsample(liveChan,nCut);
+                        xvalChan = liveChan;
+                        cutIx = find(ismember(liveChan,cutChan));
+                        xvalChan(cutIx) = [];
+                        xvalIx = find(ismember(liveChan,xvalChan));
+                        
+                        xvalAirPick = AirPick(xvalIx);
+                        xvalOffset = offsetArray(xvalIx);
+                        
+                        % Compute Air Wave Arrival Velocity and Intercept Time
+                        % OLS Scheme
+                        % [xVair{ii,jj}(kk,1), ~] = DirectWave(xvalOffset,xvalAirPick);
+                        % IRLS Scheme
+                        [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWaveIrls(xvalOffset,xvalAirPick);
+                    end
+                    
+                    % Residual Error Analysis
+                    VoAir = mean([xVdir{dh,jj,ii}]);
+                    
+                    % Find Velocity Residual for Additional Trace Shifts & Calulate Residual Time
+                    deltaT{ii,jj} = (offsetArray./VoAir) - (offsetArray./0.299);
+                    ResAirPick = AirPick - deltaT{ii,jj};
+                    % Recalculate Airwave Moveout Velocity
+                    [VoDir{dh,jj,ii}, toDir{dh,jj,ii}] = DirectWaveIrls(offsetArray,ResAirPick);
+
+                    %                 xAirTo{ii,jj} = xToDir{dh,jj,ii};
+                    AirTo{ii,jj} = toDir{dh,jj,ii};
+                    
+                    
+                    % Apply Residual Time Shifts
+                    %                 ResGatherDirPicks{dh,jj,ii} = DirectPicks(jj,:) - deltaT{ii,jj};
+                    
+                    % Estimate Wavelet Depth
+                    %             xDepthDir{dh,jj,ii} = xVdir{dh,jj,ii}.*(xToDir{dh,jj,ii}-xAirTo{ii,jj});
+                    xDepthDir{dh,jj,ii} = 0;
+                    % Estimate Direct Wave Density
+                    %             xRhoDir{dh,jj,ii} = DryCrim([xVdir{dh,jj,ii}]);
+                    xRhoDir{dh,jj,ii} = 0;
+                    % Error Analysis
+                    %             VoDir{dh,jj,ii} = mean([xVdir{dh,jj,ii}]);
+                    VoVarDir{dh,jj,ii} = var([xVdir{dh,jj,ii}]);
+                    %             toDir{dh,jj,ii} = mean([xToDir{dh,jj,ii}]);
+                    toVarDir{dh,jj,ii} = var([xToDir{dh,jj,ii}]);
+                    %             DepthDir{dh,jj,ii} = mean([xDepthDir{dh,jj,ii}]);
+                    DepthDir{dh,jj,ii} = VoDir{dh,jj,ii}.*toDir{dh,jj,ii};
+                    %             RhoDir{dh,jj,ii} = mean([xRhoDir{dh,jj,ii}]);
+                    RhoDir{dh,jj,ii} = DryCrim(VoDir{dh,jj,ii});
+                    %             CovZP = cov([xDepthDir{dh,jj,ii}],[xRhoDir{dh,jj,ii}]);
+                    CovZP = zeros(2,2);
+                    DepthVarDir{dh,jj,ii} = CovZP(1,1);
+                    RhoDirVar{dh,jj,ii} = CovZP(2,2);
+                    CovDepthRhoDir{dh,jj,ii} = CovZP(1,2);
+                end
+            else
+                % Cross-Validation for Surface Velocity Estimation
+%                 for jj = looper
+                 parfor (jj = looper, nWorkers)
+                    % Multiple Shot Gathers in Population
+                    isManyShots = 1;
+                    if isManyShots
+                        shotRange = 5;
+                        ranger = sqrt(([1:length(Radar{ii})]-jj).^2); % Compute Distance
+                        getIx = find(ranger<=shotRange); % Find Nearby Picks
+                        DirPick = DirectPicks(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
+                        DirPick = DirPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
+                        pickPool = size(DirPick,1);
+                        xvalPool = 1:pickPool;
+                        % Cross-Validation for Surface Velocity Estimation 10-12-17
+                        for kk = 1:1250 % 1250 Random Draws
+                            nCut = randsample([0,1,2],1);
+                            cutChan = randsample(liveChan,nCut);
+                            xvalChan = liveChan;
+                            cutIx = find(ismember(liveChan,cutChan));
+                            xvalChan(cutIx) = [];
+                            xvalIx = find(ismember(liveChan,xvalChan));
+                            pickPool = length(xvalIx);
+                            xvalBin = randsample(xvalPool,pickPool,'true');
+                            xvalDirPick = ...
+                                DirPick(sub2ind(size(DirPick),xvalBin,xvalIx));
+                            xvalOffset = offsetArray(xvalIx);
+                            
+                            % Compute Air Wave Arrival Velocity and Intercept Time
+                            % OLS Scheme
+                            % [xVair{ii,jj}(kk,1), xToAir{ii,jj}(kk,1)]...
+                            %   = DirectWave(xvalOffset,xvalAirPick);
+                            % IRLS Scheme
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
+                                = DirectWaveIrls(xvalOffset,xvalDirPick);
+                        end
+                    end
+                    % Single Shot Gather in Population
+                    isSingleShot = 0;
+                    if isSingleShot
+                        % Re-Extract Direct Wave Picks after Residual Shifts
+                        DirPick = DirectPicks(jj,:) - deltaT{ii,jj}; % Residual Static Corection
+                        DirPick = DirPick - AirTo{ii,jj}*ones(1,nChan); % Time-Zero Static Shift                       
+                        for kk = 1:250 % 250 Random Draws
+                            % Cross-Validation for Surface Velocity Estimation 7-28-17
+                            nCut = randsample([0,1,2],1);
+                            cutChan = randsample(liveChan,nCut);
+                            xvalChan = liveChan;
+                            cutIx = find(ismember(liveChan,cutChan));
+                            xvalChan(cutIx) = [];
+                            xvalIx = find(ismember(liveChan,xvalChan));
+                            
+                            xvalDirPick = DirPick(xvalIx);
+                            xvalOffset = offsetArray(xvalIx);
+                            
+                            % Compute Air Wave Arrival Velocity and Intercept Time
+                            % OLS Scheme
+                            % [xVair{ii,jj}(kk,1), xToAir{ii,jj}(kk,1)]...
+                            %   = DirectWave(xvalOffset,xvalAirPick);
+                            % IRLS Scheme
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
+                                = DirectWaveIrls(xvalOffset,xvalDirPick);
+                        end
+                    end
+                    
+                    % Estimate Wavelet Depth
+                    xDepthDir{dh,jj,ii} = xVdir{dh,jj,ii}.*xToDir{dh,jj,ii};
+                    % Estimate Direct Wave Density
+                    xRhoDir{dh,jj,ii} = DryCrim([xVdir{dh,jj,ii}]);
+                    % Error Analysis
+                    VoDir{dh,jj,ii} = mean([xVdir{dh,jj,ii}]);
+                    VoVarDir{dh,jj,ii} = var([xVdir{dh,jj,ii}]);
+                    toDir{dh,jj,ii} = mean([xToDir{dh,jj,ii}]);
+                    toVarDir{dh,jj,ii} = var([xToDir{dh,jj,ii}]);
+                    DepthDir{dh,jj,ii} = mean([xDepthDir{dh,jj,ii}]);
+                    RhoDir{dh,jj,ii} = mean([xRhoDir{dh,jj,ii}]);
+                    CovZP = cov([xDepthDir{dh,jj,ii}],[xRhoDir{dh,jj,ii}]);
+                    DepthVarDir{dh,jj,ii} = CovZP(1,1);
+                    RhoDirVar{dh,jj,ii} = CovZP(2,2);
+                    CovDepthRhoDir{dh,jj,ii} = CovZP(1,2);
                 end
                 
-                % Residual Error Analysis
-                VoDir{dh,jj,ii} = mean([xVdir{dh,jj,ii}]);
-                
-                % Find Velocity Residual for Additional Trace Shifts & Calulate Residual Time
-                deltaT{ii,jj} = (offsetArray./VoDir{dh,jj,ii}) - (offsetArray./0.299);
-                xAirTo{ii,jj} = xToDir{dh,jj,ii};
-                AirTo{ii,jj} = mean(xAirTo{ii,jj});
             end
             
-                % Apply Residual Time Shifts
-                ResGatherDirPicks{dh,jj,ii} = DirectPicks(jj,:) - deltaT{ii,jj};
-%                 DirectPicks(jj,:) = DirectPicks - deltaT{ii,jj};
-                
-                % Re-Extract Direct Wave Picks after Residual Shifts
-                DirPick = ResGatherDirPicks{dh,jj,ii};
-            for kk = 1:100 % 100 Random Draws
-                % Cross-Validation for Surface Velocity Estimation 7-28-17
-                nCut = randsample([0,1,2],1);
-                cutChan = randsample(liveChan,nCut);
-                xvalChan = liveChan;
-                cutIx = find(ismember(liveChan,cutChan));
-                xvalChan(cutIx) = [];
-                xvalIx = find(ismember(liveChan,xvalChan));
-                
-                xvalDirPick = DirPick(xvalIx);
-                xvalOffset = offsetArray(xvalIx);
-                
-                % Compute Air Wave Arrival Velocity and Intercept Time
-                % OLS Scheme
-                %                 [xVair{ii,jj}(kk,1), xToAir{ii,jj}(kk,1)] = DirectWave(xvalOffset,xvalAirPick);
-                % IRLS Scheme
-                [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWaveIrls(xvalOffset,xvalDirPick);
-            end
-            % Estimate Wavelet Depth
-            xDepthDir{dh,jj,ii} = xVdir{dh,jj,ii}.*(xToDir{dh,jj,ii}-xAirTo{ii,jj});
-            % Estimate Direct Wave Density
-            xRhoDir{dh,jj,ii} = DryCrim([xVdir{dh,jj,ii}]);
-            % Error Analysis
-            VoDir{dh,jj,ii} = mean([xVdir{dh,jj,ii}]);
-            VoVarDir{dh,jj,ii} = var([xVdir{dh,jj,ii}]);
-            toDir{dh,jj,ii} = mean([xToDir{dh,jj,ii}]);
-            toVarDir{dh,jj,ii} = var([xToDir{dh,jj,ii}]);
-            DepthDir{dh,jj,ii} = mean([xDepthDir{dh,jj,ii}]);
-            RhoDir{dh,jj,ii} = mean([xRhoDir{dh,jj,ii}]);
-            CovZP = cov([xDepthDir{dh,jj,ii}],[xRhoDir{dh,jj,ii}]);
-            DepthVarDir{dh,jj,ii} = CovZP(1,1);
-            RhoDirVar{dh,jj,ii} = CovZP(2,2);
-            CovDepthRhoDir{dh,jj,ii} = CovZP(1,2);
+            % Concatenate Direct Travel Time
+            DirectTo{dh,ii} = [toDir{dh,:,ii}];
+            DirectToVar{dh,ii} = [toVarDir{dh,:,ii}];
+            % Concatenate Direct Velocity
+            DirectVelocity{dh,ii} = [VoDir{dh,:,ii}];
+            DirectVelocityVar{dh,ii} = [VoVarDir{dh,:,ii}];
+            % Concatenate Direct Wave Depth
+            DirectDepth{dh,ii} = [DepthDir{dh,:,ii}];
+            DirectDepthVar{dh,ii} = [DepthVarDir{dh,:,ii}];
+            % Concatenate Reflection Density
+            DirectDensity{dh,ii} = [RhoDir{dh,:,ii}];
+            DirectDensityVar{dh,ii} = [RhoDirVar{dh,:,ii}];
+            % Concatenate Covariance
+            CovarianceDepthDensityDirect{dh,ii} = [CovDepthRhoDir{dh,:,ii}];
             
-        end
-        
-        % Concatenate Direct Travel Time
-        DirectTo{dh,ii} = [toDir{dh,:,ii}];
-        DirectToVar{dh,ii} = [toVarDir{dh,:,ii}];
-        % Concatenate Direct Velocity
-        DirectVelocity{dh,ii} = [VoDir{dh,:,ii}];
-        DirectVelocityVar{dh,ii} = [VoVarDir{dh,:,ii}];
-        % Concatenate Direct Wave Depth
-        DirectDepth{dh,ii} = [DepthDir{dh,:,ii}];
-        DirectDepthVar{dh,ii} = [DepthVarDir{dh,:,ii}];
-        % Concatenate Reflection Density
-        DirectDensity{dh,ii} = [RhoDir{dh,:,ii}];
-        DirectDensityVar{dh,ii} = [RhoDirVar{dh,:,ii}];
-        % Concatenate Covariance
-        CovarianceDepthDensityDirect{dh,ii} = [CovDepthRhoDir{dh,:,ii}];
-        
-        % Estimte DirectSWE
-        DirectSWE{dh,ii} = DirectDepth{dh,ii}.*DirectDensity{dh,ii};
-        % Error Propagation Equation
-        DirectSWEvar{dh,ii} = DirectDepthVar{dh,ii}.*DirectDensity{dh,ii}.^2 ...
-            + DirectDensityVar{dh,ii}.*DirectDepth{dh,ii}.^2 ...
-            + 2.*DirectDepth{dh,ii}.*DirectDensity{dh,ii}.*CovarianceDepthDensityDirect{dh,ii};
-        
-        % Smooth Esitmates
-        smoothR = 251;
-        dhTWT{dh,ii} = nonParametricSmooth( 1:length(DirectTo{dh,ii}),...
-            DirectTo{dh,ii},1:length(DirectTo{dh,ii}),smoothR);
-        dhTWTvar{dh,ii} = nonParametricSmooth( 1:length(DirectToVar{dh,ii}),...
-            DirectToVar{dh,ii},1:length(DirectToVar{dh,ii}),smoothR);
-        dhSnowWaterEqv{dh,ii} = nonParametricSmooth( 1:length(DirectSWE{dh,ii}),DirectSWE{dh,ii},...
-            1:length(DirectSWE{dh,ii}),smoothR);
-        dhSnowWaterEqvVar{dh,ii} = nonParametricSmooth( 1:length(DirectSWEvar{dh,ii}),...
-            DirectSWEvar{dh,ii},1:length(DirectSWEvar{dh,ii}),smoothR);
-        dhDensity{dh,ii} = nonParametricSmooth( 1:length(DirectDensity{dh,ii}),...
-            DirectDensity{dh,ii},1:length(DirectDensity{dh,ii}),smoothR);
-        dhDensityVar{dh,ii} = nonParametricSmooth( 1:length(DirectDensityVar{dh,ii}),...
-            DirectDensityVar{dh,ii},1:length(DirectDensityVar{dh,ii}),smoothR);
-        dhDepth{dh,ii} = nonParametricSmooth( 1:length(DirectDepth{dh,ii}),...
-            DirectDepth{dh,ii},1:length(DirectDepth{dh,ii}),smoothR);
-        dhDepthVar{dh,ii} = nonParametricSmooth( 1:length(DirectDepthVar{dh,ii}),...
-            DirectDepthVar{dh,ii},1:length(DirectDepthVar{dh,ii}),smoothR);        
+            % Estimte DirectSWE
+            DirectSWE{dh,ii} = DirectDepth{dh,ii}.*DirectDensity{dh,ii};
+            % Error Propagation Equation
+            DirectSWEvar{dh,ii} = DirectDepthVar{dh,ii}.*DirectDensity{dh,ii}.^2 ...
+                + DirectDensityVar{dh,ii}.*DirectDepth{dh,ii}.^2 ...
+                + 2.*DirectDepth{dh,ii}.*DirectDensity{dh,ii}.*CovarianceDepthDensityDirect{dh,ii};
+            
+            % Smooth Esitmates
+            smoothR = 251;
+            dhTWT{dh,ii} = nonParametricSmooth( 1:length(DirectTo{dh,ii}),...
+                DirectTo{dh,ii},1:length(DirectTo{dh,ii}),smoothR);
+            dhTWTvar{dh,ii} = nonParametricSmooth( 1:length(DirectToVar{dh,ii}),...
+                DirectToVar{dh,ii},1:length(DirectToVar{dh,ii}),smoothR);
+            dhSnowWaterEqv{dh,ii} = nonParametricSmooth( 1:length(DirectSWE{dh,ii}),DirectSWE{dh,ii},...
+                1:length(DirectSWE{dh,ii}),smoothR);
+            dhSnowWaterEqvVar{dh,ii} = nonParametricSmooth( 1:length(DirectSWEvar{dh,ii}),...
+                DirectSWEvar{dh,ii},1:length(DirectSWEvar{dh,ii}),smoothR);
+            dhDensity{dh,ii} = nonParametricSmooth( 1:length(DirectDensity{dh,ii}),...
+                DirectDensity{dh,ii},1:length(DirectDensity{dh,ii}),smoothR);
+            dhDensityVar{dh,ii} = nonParametricSmooth( 1:length(DirectDensityVar{dh,ii}),...
+                DirectDensityVar{dh,ii},1:length(DirectDensityVar{dh,ii}),smoothR);
+            dhDepth{dh,ii} = nonParametricSmooth( 1:length(DirectDepth{dh,ii}),...
+                DirectDepth{dh,ii},1:length(DirectDepth{dh,ii}),smoothR);
+            dhDepthVar{dh,ii} = nonParametricSmooth( 1:length(DirectDepthVar{dh,ii}),...
+                DirectDepthVar{dh,ii},1:length(DirectDepthVar{dh,ii}),smoothR);
         end
     end
 
@@ -586,7 +662,7 @@ if isSWEDISH
         % Concatenate Primary Reflection Picks for Horizon hh
         GatherReflectionPicks{rh,ii} = cat(2,ReflectionFBpick{:,rh,ii});
         Reflection = GatherReflectionPicks{rh,ii};
-%         for jj = 1:length(Radar{ii})
+%         for jj = looper
         parfor (jj = looper, nWorkers)
             % Cross-Validation for Reflection Velocity Estimation
             % Multiple Shot Gathers in Population
@@ -595,8 +671,10 @@ if isSWEDISH
                 shotRange = 5;
                 ranger = sqrt(([1:length(Radar{ii})]-jj).^2); % Compute Distance
                 getIx = find(ranger<=shotRange); % Find Nearby Picks
-                RefPick = GatherReflectionPicks{rh,ii}(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual
-                RefPick = RefPick - vertcat(AirTo{ii,getIx})*ones(1,nChan);
+                RefPick = Reflection(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
+                RefPick = RefPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
+                pickPool = size(RefPick,1);
+                xvalPool = 1:pickPool;
 %                 stdRefPick = std(RefPick,0,1);
             end
             % Single Shot Gather in Population
@@ -605,54 +683,51 @@ if isSWEDISH
                 RefPick = Reflection(jj,:) - deltaT{ii,jj}; % Residual
                 RefPick = RefPick - AirTo{ii,jj};           % Bulk Shift
             end
-
-            for kk = 1:100 % 100 Random Draws
-                % Cross-Validation for Surface Velocity Estimation 7-28-17
+                % Cross-Validation for Surface Velocity Estimation 10-12-17
                 if isManyShots
-                    xvalRefPickBin = [];
-                    xvalOffsetBin = [];
-                    for iShot = 1:size(RefPick,1)
-                        GatherPicks = RefPick(iShot,:);
-                        nCut = randsample([0,1,2],1);
-                        cutChan = randsample(liveChan,nCut);
-                        xvalChan = liveChan;
-                        cutIx = find(ismember(liveChan,cutChan));
-                        xvalChan(cutIx) = [];
-                        xvalIx = find(ismember(liveChan,xvalChan));
-                        xvalRefPickBin = [xvalRefPickBin,GatherPicks(xvalIx)];
-                        xvalOffsetBin = [xvalOffsetBin,offsetArray(xvalIx)];
-                    end
-                        xvalRefPick = xvalRefPickBin;
-                        xvalOffset = xvalOffsetBin;
-                end
-                if isSingleShot
+                    for kk = 1:1250 % 1250 Random Draws
                     nCut = randsample([0,1,2],1);
                     cutChan = randsample(liveChan,nCut);
                     xvalChan = liveChan;
                     cutIx = find(ismember(liveChan,cutChan));
                     xvalChan(cutIx) = [];
                     xvalIx = find(ismember(liveChan,xvalChan));
-                    
-                    xvalRefPick = RefPick(xvalIx);
+                    pickPool = length(xvalIx);
+                    xvalBin = randsample(xvalPool,pickPool,'true');
+                    xvalRefPick = ...
+                        RefPick(sub2ind(size(RefPick),xvalBin,xvalIx));
                     xvalOffset = offsetArray(xvalIx);
-                end
-                
-                % Compute Reflected Arrival Velocity and Intercept Time
-                % OLS Scheme
+                    
+                    % Compute Reflected Arrival Velocity and Intercept Time
+                    % IRLS Scheme
+                    [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                        = VrmsIrls(xvalOffset,xvalRefPick);
+                    % OLS Scheme
 %                 [xVref{ii,jj}(kk,1), xToRef{ii,jj}(kk,1), xDepth{ii,jj}(kk,1)] ...
 %                     = Vrms(xvalOffset,xvalRefPick);
-                % IRLS Scheme
-                [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
-                    = VrmsIrls(xvalOffset,xvalRefPick);
-                % Linear Arrival Approach
-%                 [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1)] ...
-%                     = DirectWaveIrls(xvalOffset,xvalRefPick);
-%                 xToRef{hh,jj,ii} = abs(xToRef{hh,jj,ii}(kk,1));
+                    end
+                end
+                if isSingleShot
+                    for kk = 1:250 % 250 Random Draws
+                        nCut = randsample([0,1,2],1);
+                        cutChan = randsample(liveChan,nCut);
+                        xvalChan = liveChan;
+                        cutIx = find(ismember(liveChan,cutChan));
+                        xvalChan(cutIx) = [];
+                        xvalIx = find(ismember(liveChan,xvalChan));
+                        
+                        xvalRefPick = RefPick(xvalIx);
+                        xvalOffset = offsetArray(xvalIx);                    
+                    % Compute Reflected Arrival Velocity and Intercept Time
+                    % OLS Scheme
+                    % [xVref{ii,jj}(kk,1), xToRef{ii,jj}(kk,1), xDepth{ii,jj}(kk,1)] ...
+                    %   = Vrms(xvalOffset,xvalRefPick);
+                    % IRLS Scheme
+                    [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                        = VrmsIrls(xvalOffset,xvalRefPick);    
+                    end
+                end
 
-            end
-%             xToRef{hh,jj,ii} = abs(xToRef{hh,jj,ii});
-%             xDepth{hh,jj,ii} = abs(xDepth{hh,jj,ii});
-%             xDepth{hh,jj,ii} = xVref{hh,jj,ii}.*xToRef{hh,jj,ii};
             % Create Random Sample Population of Surface Density
             xRhoRef{rh,jj,ii} = DryCrim([xVref{rh,jj,ii}]);
             
