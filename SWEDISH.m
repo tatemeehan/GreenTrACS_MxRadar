@@ -13,7 +13,12 @@ clear; %close all; clc;
 % Input  Data Directory
 
 % 500 MHz Data
-dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
+% GreenTrACS 2016
+% dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-4-16-Core7-Spiral';
+dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-2-16-Core7-Spur-W';
+
+% GreenTrACS 2017
+% dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS\2017\6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-18-17-SummitRouteI';
@@ -75,8 +80,8 @@ isParallel = 1;
 isReadSensorsSoftware = 1;     % Read Multiplexed Data
 
 % Process Data
-isTrimTWT = 1;          % Truncate Recorded Data for Near-Surface Analysis
-isKill = 1;             % Kill Unanted Channels
+isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
+isKill = 0;             % Kill Unanted Channels
 isFXdecon = 1;          % Fx-Predicitive Deconvolution
 isSWEDISH = 1;          % Perform Surface Velocity Analysis
 
@@ -100,7 +105,7 @@ load('CalibrationChannelShiftTrough500MHz2017.mat');
 chanShift = Calibration(1).chanShift; % Import chanShift
 load('LateNite.mat');   % Import Cool Colormap
 
-lineNo = [2];           % Array of data "LINE" numbers
+lineNo = [0,1];           % Array of data "LINE" numbers
 nFiles = length(lineNo);    % Number of Files
 nChan = 9;             % Number of Recorded Channels
 chan =  1:nChan;       % Linear Array of Record Channels
@@ -237,7 +242,7 @@ if isReadSensorsSoftware
         end
         
         % Pad Data with Instrument Zero
-        padding = 0;
+        padding = 100;
         instrumentPad = zeros(padding,size(Rad{ii},2));
         if padding ~= 0
             for jj = 1:size(Rad{ii},2)
@@ -370,6 +375,23 @@ if isSWEDISH
 %     display(' ')
     [~, DirectFBpick] = polarPicker(pickRadar);
     
+    pickRadar = Radar;
+    
+    % Median Subtraction Filter For Reflection Analysis
+    for ii = 1:nFiles
+        parfor (jj = chan, nWorkers)
+            pickRadar{jj,ii} = pickRadar{jj,ii}-median(pickRadar{jj,ii},2)...
+                *ones(1,size(pickRadar{jj,ii},2));
+        end
+    end
+
+    % AGC Gain for PolarPicker 
+    for ii = 1:nFiles
+        parfor (jj = chan, nWorkers)
+            pickRadar{jj,ii} = AGCgain(pickRadar{jj,ii},350,2);
+        end
+    end
+    
     % Pick Primary Reflection Arrival
     display('Pick Primary Reflection')
     display(' ')
@@ -403,16 +425,19 @@ if isSWEDISH
     display(' ')
     tic
   
-    % Determin Maximum File Size
+    % Determine Maximum File Size
+    nTrace = zeros(1,nFiles);
     for ii = 1:nFiles
-        nTrace(ii) = length(Radar{1,ii});
+        nTrace(ii) = size(Radar{1,ii},2);
     end
+    % Maxiumum Traces to Loop Over
     nTrace = max(nTrace);
         
     % Allocate Memory
     GatherReflectionPicks = cell(nReflectionHorizon,nFiles);
     GatherDirectPicks = cell(nDirectHorizon,nFiles);
     
+    % Allocate Direct Wave LMO Velocity Boothstrapping    
     xVdir = cell(nDirectHorizon,nTrace,nFiles);xToDir = cell(nDirectHorizon,nTrace,nFiles);
     VoDir = cell(nDirectHorizon,nTrace,nFiles);VoVarDir = cell(nDirectHorizon,nTrace,nFiles);
     toDir = cell(nDirectHorizon,nTrace,nFiles);toVarDir = cell(nDirectHorizon,nTrace,nFiles);
@@ -424,6 +449,7 @@ if isSWEDISH
     deltaT = cell(nFiles,nTrace);ResGatherDirPicks = cell(nDirectHorizon,nTrace,nFiles);
     AirTo = cell(nFiles,nTrace); xAirTo = cell(nFiles,nTrace);
     
+    % Allocate Direct Wave Snow Analysis
     DirectTo = cell(nDirectHorizon,nFiles);DirectToVar = cell(nDirectHorizon,nFiles);
     DirectVelocity = cell(nDirectHorizon,nFiles); DirectVelocityVar = cell(nDirectHorizon,nFiles);
     DirectDepth = cell(nDirectHorizon,nFiles); DirectDepthVar = cell(nDirectHorizon,nFiles);
@@ -431,33 +457,54 @@ if isSWEDISH
     CovarianceDepthDensityDirect = cell(nDirectHorizon,nFiles); 
     DirectSWE = cell(nDirectHorizon,nFiles); DirectSWEvar = cell(nDirectHorizon,nFiles);
     
+    % Allocate for Concatenation and Plotting
     dhTWT = cell(nDirectHorizon,nFiles); dhTWTvar = cell(nDirectHorizon,nFiles);
     dhSnowWaterEqv = cell(nDirectHorizon,nFiles);dhSnowWaterEqvVar = cell(nDirectHorizon,nFiles);
     dhDensity = cell(nDirectHorizon,nFiles); dhDensityVar = cell(nDirectHorizon,nFiles); 
     dhDepth = cell(nDirectHorizon,nFiles); dhDepthVar = cell(nDirectHorizon,nFiles);
    
+    % Allocate Bootstrapping of RMS Velocity
     xVref = cell(nReflectionHorizon,nTrace,nFiles);xToRef = cell(nReflectionHorizon,nTrace,nFiles);
     xDepth = cell(nReflectionHorizon,nTrace,nFiles);xRhoRef = cell(nReflectionHorizon,nTrace,nFiles);
     VoRef = cell(nReflectionHorizon,nTrace,nFiles);VoVarRef = cell(nReflectionHorizon,nTrace,nFiles);
     toRef = cell(nReflectionHorizon,nTrace,nFiles);toVarRef = cell(nReflectionHorizon,nTrace,nFiles);
     HorizonDepth = cell(nReflectionHorizon,nTrace,nFiles);RhoRef = cell(nReflectionHorizon,nTrace,nFiles);
     HorizonDepthVar = cell(nReflectionHorizon,nTrace,nFiles);RhoRefVar = cell(nReflectionHorizon,nTrace,nFiles);
-    CovDepthRho = cell(nReflectionHorizon,nTrace,nFiles);ReflectionVelocity = cell(nReflectionHorizon,nFiles);
+    CovDepthRho = cell(nReflectionHorizon,nTrace,nFiles);
+    
+    % Allocation for Interval Velocities
+    xVint = cell(nReflectionHorizon,nTrace,nFiles);xHint = cell(nReflectionHorizon,nTrace,nFiles);
+    VoInt = cell(nReflectionHorizon,nTrace,nFiles);VoIntVar = cell(nReflectionHorizon,nTrace,nFiles);
+    HoInt = cell(nReflectionHorizon,nTrace,nFiles);HoIntVar = cell(nReflectionHorizon,nTrace,nFiles);
+    xRhoInt = cell(nReflectionHorizon,nTrace,nFiles); RhoInt = cell(nReflectionHorizon,nTrace,nFiles);
+    RhoIntVar = cell(nReflectionHorizon,nTrace,nFiles);CovThicknessRho = cell(nReflectionHorizon,nTrace,nFiles);      
+    
+    % Allocate for Concatenation and Plotting    
+    ReflectionVelocity = cell(nReflectionHorizon,nFiles);
     ReflectionVelocityVar = cell(nReflectionHorizon,nFiles);ReflectionDepth = cell(nReflectionHorizon,nFiles);
     ReflectionDepthVar = cell(nReflectionHorizon,nFiles);ReflectionDensity = cell(nReflectionHorizon,nFiles);
     ReflectionDensityVar = cell(nReflectionHorizon,nFiles);CovarianceDepthDensity = cell(nReflectionHorizon,nFiles);
     ReflectionTo = cell(nReflectionHorizon,nFiles); ReflectionToVar = cell(nReflectionHorizon,nFiles);
+    IntervalVelocity = cell(nReflectionHorizon,nFiles);IntervalVelocityVar = cell(nReflectionHorizon,nFiles);
+    IntervalThickness = cell(nReflectionHorizon,nFiles);IntervalThicknessVar = cell(nReflectionHorizon,nFiles);
+    IntervalDensity = cell(nReflectionHorizon,nFiles);IntervalDensityVar = cell(nReflectionHorizon,nFiles);
+    CovarianceThicknessDensity = cell(nReflectionHorizon,nFiles);
+    
+    % Allocation for Results
     SWE = cell(nReflectionHorizon,nFiles);SWEvar = cell(nReflectionHorizon,nFiles);
+    SWEint = cell(nReflectionHorizon,nFiles);SWEintVar = cell(nReflectionHorizon,nFiles);
     TWT = cell(nReflectionHorizon,nFiles);TWTvar = cell(nReflectionHorizon,nFiles);
     SnowWaterEqv = cell(nReflectionHorizon,nFiles);SnowWaterEqvVar = cell(nReflectionHorizon,nFiles);
     Density = cell(nReflectionHorizon,nFiles); DensityVar = cell(nReflectionHorizon,nFiles);
     Depth = cell(nReflectionHorizon,nFiles); DepthVar = cell(nReflectionHorizon,nFiles);
-                            
+    LayerSnowWaterEqv = cell(nReflectionHorizon,nFiles);LayerSnowWaterEqvVar = cell(nReflectionHorizon,nFiles);
+    LayerDensity = cell(nReflectionHorizon,nFiles);LayerDensityVar = cell(nReflectionHorizon,nFiles);
+    LayerThickness = cell(nReflectionHorizon,nFiles);LayerThicknessVar = cell(nReflectionHorizon,nFiles);    
     
 % Extract AirWave Picks and Perform Residual Subtraction Velocity Analysis
 %     parfor (ii = 1:nFiles, nWorkers - (nWorkers-nFiles)) 
     for ii = 1:nFiles
-        looper = 1:length(Radar{ii});
+        looper = 1:size(Radar{ii},2);
         % Concatenate Air Wave Picks
         for dh = 1:nDirectHorizon
             % Concatenate Primary Reflection Picks for Horizon hh
@@ -467,7 +514,7 @@ if isSWEDISH
             if dh  == 1;
 %                 for jj = looper
                  parfor (jj = looper, nWorkers)
-                    %         for jj = 1:length(Radar{ii})
+%                             for jj = 1:length(Radar{ii})
                     
                     % Extract Picks
                     AirPick = DirectPicks(jj,:);
@@ -536,7 +583,7 @@ if isSWEDISH
                     isManyShots = 1;
                     if isManyShots
                         shotRange = 5;
-                        ranger = sqrt(([1:length(Radar{ii})]-jj).^2); % Compute Distance
+                        ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
                         getIx = find(ranger<=shotRange); % Find Nearby Picks
                         DirPick = DirectPicks(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
                         DirPick = DirPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
@@ -657,19 +704,19 @@ if isSWEDISH
 
 % Primary Reflection Velocity Analysis               
     for ii = 1:nFiles
-        looper = 1:length(Radar{ii});
+        looper = 1:size(Radar{ii},2);
         for rh = 1:nReflectionHorizon
         % Concatenate Primary Reflection Picks for Horizon hh
         GatherReflectionPicks{rh,ii} = cat(2,ReflectionFBpick{:,rh,ii});
         Reflection = GatherReflectionPicks{rh,ii};
 %         for jj = looper
         parfor (jj = looper, nWorkers)
-            % Cross-Validation for Reflection Velocity Estimation
+            % Jackknife Simulation for Reflection Velocity Estimation
             % Multiple Shot Gathers in Population
             isManyShots = 1;
             if isManyShots
                 shotRange = 5;
-                ranger = sqrt(([1:length(Radar{ii})]-jj).^2); % Compute Distance
+                ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
                 getIx = find(ranger<=shotRange); % Find Nearby Picks
                 RefPick = Reflection(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
                 RefPick = RefPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
@@ -683,7 +730,7 @@ if isSWEDISH
                 RefPick = Reflection(jj,:) - deltaT{ii,jj}; % Residual
                 RefPick = RefPick - AirTo{ii,jj};           % Bulk Shift
             end
-                % Cross-Validation for Surface Velocity Estimation 10-12-17
+                % Jackknife Simulation for Reflection Velocity Estimation 10-12-17
                 if isManyShots
                     for kk = 1:1250 % 1250 Random Draws
                     nCut = randsample([0,1,2],1);
@@ -728,7 +775,7 @@ if isSWEDISH
                     end
                 end
 
-            % Create Random Sample Population of Surface Density
+            % Create Bootstrapped Population of Surface Density
             xRhoRef{rh,jj,ii} = DryCrim([xVref{rh,jj,ii}]);
             
             % Error Analysis
@@ -745,27 +792,80 @@ if isSWEDISH
             CovDepthRho{rh,jj,ii} = CovZP(1,2);
             
         end
+        
+        % Perform Dix Inversion of RMS velocities
+        parfor (jj = looper, nWorkers)
+%         for jj = looper
+            if rh > 1
+                % Real Solution Constraint
+                realIxI = find(real([xToRef{rh-1,jj,ii}]));
+                realIxJ = find(real([xToRef{rh,jj,ii}]));
+                
+                [xVint{rh,jj,ii}, xHint{rh,jj,ii}] ...
+                    = DixHVA([xVref{rh-1,jj,ii}(realIxI)],[xVref{rh,jj,ii}(realIxJ)],...
+                    [xToRef{rh-1,jj,ii}(realIxI)],[xToRef{rh,jj,ii}(realIxJ)]);
+                xRhoInt{rh,jj,ii} = DryCrim(xVint{rh,jj,ii});
+                VoInt{rh,jj,ii} = mean([xVint{rh,jj,ii}]);
+                VoIntVar{rh,jj,ii} = var([xVint{rh,jj,ii}]);
+                HoInt{rh,jj,ii} = mean([xHint{rh,jj,ii}]);
+                HoIntVar{rh,jj,ii} = var([xHint{rh,jj,ii}]);
+                RhoInt{rh,jj,ii} = mean([xRhoInt{rh,jj,ii}]);
+                RhoIntVar{rh,jj,ii} = var([xRhoInt{rh,jj,ii}]);
+                CovHP = cov([xHint{rh,jj,ii}],[xRhoInt{rh,jj,ii}]);
+                CovThicknessRho{rh,jj,ii} = CovHP(1,2);
+                
+            else
+                realIx = find(real([xToRef{rh,jj,ii}]));
+                xVint{rh,jj,ii} = xVref{rh,jj,ii}(realIx);
+                xHint{rh,jj,ii} = xDepth{rh,jj,ii}(realIx);
+                xRhoInt{rh,jj,ii} = xRhoRef{rh,jj,ii}(realIx);
+                HoInt{rh,jj,ii} = HorizonDepth{rh,jj,ii};
+                HoIntVar{rh,jj,ii} = HorizonDepthVar{rh,jj,ii};
+                VoInt{rh,jj,ii} = VoRef{rh,jj,ii};
+                VoIntVar{rh,jj,ii} = VoVarRef{rh,jj,ii};
+                RhoInt{rh,jj,ii} = RhoRef{rh,jj,ii};
+                RhoIntVar{rh,jj,ii} = RhoRefVar{rh,jj,ii};
+                CovHP = cov([xHint{rh,jj,ii} ],[xRhoInt{rh,jj,ii}]);
+                CovThicknessRho{rh,jj,ii} = CovHP(1,2);
+            end
+            
+        end
+
+                    
         % Concatenate Reflection Travel Time
         ReflectionTo{rh,ii} = [toRef{rh,:,ii}];
         ReflectionToVar{rh,ii} = [toVarRef{rh,:,ii}];
         % Concatenate Reflection Velocity
         ReflectionVelocity{rh,ii} = [VoRef{rh,:,ii}];
         ReflectionVelocityVar{rh,ii} = [VoVarRef{rh,:,ii}];
+        IntervalVelocity{rh,ii} = [VoInt{rh,:,ii}];
+        IntervalVelocityVar{rh,ii} = [VoIntVar{rh,:,ii}];
         % Concatenate Reflector Depth
         ReflectionDepth{rh,ii} = [HorizonDepth{rh,:,ii}];
         ReflectionDepthVar{rh,ii} = [HorizonDepthVar{rh,:,ii}];
+        %Concatenate Layer Thicnkess
+        IntervalThickness{rh,ii} = [HoInt{rh,:,ii}];
+        IntervalThicknessVar{rh,ii} = [HoIntVar{rh,:,ii}];
         % Concatenate Reflection Density
         ReflectionDensity{rh,ii} = [RhoRef{rh,:,ii}];
         ReflectionDensityVar{rh,ii} = [RhoRefVar{rh,:,ii}];
+        % Concatenate Interval Density
+        IntervalDensity{rh,ii} = [RhoInt{rh,:,ii}];
+        IntervalDensityVar{rh,ii} = [RhoIntVar{rh,:,ii}];
         % Concatenate Covariance
         CovarianceDepthDensity{rh,ii} = [CovDepthRho{rh,:,ii}];
+        CovarianceThicknessDensity{rh,ii} = [CovThicknessRho{rh,:,ii}];
         
         % Estimte SWE
         SWE{rh,ii} = ReflectionDepth{rh,ii}.*ReflectionDensity{rh,ii};
+        SWEint{rh,ii} = IntervalThickness{rh,ii}.*IntervalDensity{rh,ii};
         % Error Propagation Equation
         SWEvar{rh,ii} = ReflectionDepthVar{rh,ii}.*ReflectionDensity{rh,ii}.^2 ...
             + ReflectionDensityVar{rh,ii}.*ReflectionDepth{rh,ii}.^2 ...
             + 2.*ReflectionDepth{rh,ii}.*ReflectionDensity{rh,ii}.*CovarianceDepthDensity{rh,ii};
+        SWEintVar{rh,ii} = IntervalThicknessVar{rh,ii}.*IntervalDensity{rh,ii}.^2 ...
+            + IntervalDensityVar{rh,ii}.*IntervalThickness{rh,ii}.^2 ...
+            + 2.*IntervalThickness{rh,ii}.*IntervalDensity{rh,ii}.*CovarianceThicknessDensity{rh,ii};
         
         % Smooth Esitmates
         smoothR = 251;
@@ -785,6 +885,19 @@ if isSWEDISH
             ReflectionDepth{rh,ii},1:length(ReflectionDepth{rh,ii}),smoothR);
         DepthVar{rh,ii} = nonParametricSmooth( 1:length(ReflectionDepthVar{rh,ii}),...
             ReflectionDepthVar{rh,ii},1:length(ReflectionDepthVar{rh,ii}),smoothR);
+        % Smooth Inteval Estimates
+        LayerSnowWaterEqv{rh,ii} = nonParametricSmooth( 1:length(SWEint{rh,ii}),SWEint{rh,ii},...
+            1:length(SWEint{rh,ii}),smoothR);
+        LayerSnowWaterEqvVar{rh,ii} = nonParametricSmooth( 1:length(SWEintVar{rh,ii}),...
+            SWEintVar{rh,ii},1:length(SWEintVar{rh,ii}),smoothR);
+        LayerDensity{rh,ii} = nonParametricSmooth( 1:length(IntervalDensity{rh,ii}),...
+            IntervalDensity{rh,ii},1:length(IntervalDensity{rh,ii}),smoothR);
+        LayerDensityVar{rh,ii} = nonParametricSmooth( 1:length(IntervalDensityVar{rh,ii}),...
+            IntervalDensityVar{rh,ii},1:length(IntervalDensityVar{rh,ii}),smoothR);
+        LayerThickness{rh,ii} = nonParametricSmooth( 1:length(IntervalThickness{rh,ii}),...
+            IntervalThickness{rh,ii},1:length(IntervalThickness{rh,ii}),smoothR);
+        LayerThicknessVar{rh,ii} = nonParametricSmooth( 1:length(IntervalThicknessVar{rh,ii}),...
+            IntervalThicknessVar{rh,ii},1:length(IntervalThicknessVar{rh,ii}),smoothR);
         end
     end
     
