@@ -42,7 +42,7 @@ end
     % Force Columns
     Vint = Vint(:); Hint = Hint(:);
     % Physically Constrained Solution
-    iceIx = find(Vint<0.1689);
+    iceIx = find(Vint<0.1689 | Vint > 0.25);
     Vint(iceIx) = [];
     Hint(iceIx) = [];
     
