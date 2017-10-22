@@ -1,18 +1,21 @@
 function [pickX,pickT] = polarPickerT8( Radar, snap, nHorizon, isZoom )
 % polarPicker is a predicitive picking algorithm which applies a polar
 % transform to a window of the radargram and seeks the direction theta for
-% which the specified amplitude gradient is least. The window advances
+% which the gradient of the amplitude path is least. The window advances
 % 'step' traces and recomputes theta for the next pick prediction. The seed
 % is manually selected by the geophysicsist and a plot displays the picks 
 % per iteration. Raw Picks are smoothly interpolated for all X indicies in
 % Radar Gram. The Look-ahead distance and foreward step distance were found
 % to be optimum at 3 and 25 and have been hardcoded. 
 % polarPicker.m will snap picks to a peak, trough, or zero-crossing and
-% handles multiple horizons for selection. polarPicker.m incorporates a GUI
-% which allows the geophysicsist to 'Re-Seed' the pick if the intial 
-% conditioning goes awry. Additionally, if snap and nHorizon are 
-% unspecified the user will be propmted via the GUI to supply this
-% information.
+% handles multiple horizons for selection. If snap and nHorizon are 
+% unspecified the user will be propmted via the GUI to supply snap 
+% information. polarPicker.m incorporates a GUI which allows the 
+% geophysicsist to 'Re-Seed' the pick if the active conditioning goes awry.
+% Access this feature by pressing any key or by selecting the Re-Seed 
+% button during the picking operation. The user is promted to accpet these
+% picks if correct. All picks may cleared for the horizon or, if declined,
+% the cross-hairs allow for additional pick seeds.
 %
 %   The idea for this picking routine is founded upon the mountain range
 %   hiker metaphor by Alex Miller. A hiker will follow the path requiring
@@ -40,9 +43,9 @@ cmap = cell2mat(cmap);
 % Establish Mask Color for Picks
 pColorIx = round(quantile(1:length(cmap),.5));
 tColorIx = round(quantile(1:length(cmap),.5));
-peakColor = cmap(pColorIx,:);
-troughColor = cmap(tColorIx,:);
-zeroColor = 1-mean([peakColor;troughColor],1);
+peakColor = 1 - cmap(pColorIx,:);
+troughColor = 1 - cmap(tColorIx,:);
+zeroColor = mean([peakColor;troughColor],1);
 
 % Determine Cell Array Dimensions for looping
 [nChan,nFiles] = size(Radar);
@@ -74,6 +77,9 @@ pickTP = cell(nChan,nHorizon,nFiles);
 global isPicking
 isPicking = 1;
 
+% Refresh Horizon Workspace
+isClear = 1;
+
 if nHorizon > 0
 for ii = 1:nFiles
     jj = 1;
@@ -83,99 +89,102 @@ for ii = 1:nFiles
         figstr = ['Polar Picker: Channel: ',num2str(jj,'%02d'),' File: ' num2str(ii,'%02d')];
         h = figure('Name',figstr,'NumberTitle','off');
 %         set(h,'units','normalized','outerposition',[.25 .25 .5 .5 ])
-        set(h,'units','normalized','outerposition',[.25 .25 .25 1 ])
+%         set(h,'units','normalized','outerposition',[.25 .25 .25 1 ])
 %         set(h,'units','normalized','outerposition',[0 0 1 1 ])
+        set(h,'units','normalized','outerposition',[.25 .25 .5 1 ])
         btn = uicontrol('Style', 'pushbutton', 'String', 'Re-Seed',...
            'FontWeight','bold','FontSize',12,'Position', [125 10 100 50],...
             'Callback',{@reSeed});
+        set(h,'WindowKeyPressFcn',@reSeed);
         imagesc(Radar{jj,ii});colormap(cmap);hold on;
         
         while kk <= nHorizon
-            zoom out;   % Refresh orignal trace display
-        % Construct a questdlg to Choose Pick Snap
-        if nargin < 2;
-            prompt = ['*',blanks(2),'Which wavelet phase will you pick?',blanks(2),'*'];
-            titleTxt = ['File: ' num2str(ii,'%02d'),' Channel: ',...
-                num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')];
-            snapQuest = questdlg(prompt, titleTxt,'Peak','Trough','Zero','Peak');
-            if isempty(snapQuest)
-                % Default is Peak
-                snapQuest = 'Peak';
+            if isClear
+                zoom out;   % Refresh orignal trace display
+                % Construct a questdlg to Choose Pick Snap
+                if nargin < 2;
+                    prompt = ['*',blanks(2),'Which wavelet phase will you pick?',blanks(2),'*'];
+                    titleTxt = ['File: ' num2str(ii,'%02d'),' Channel: ',...
+                        num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')];
+                    snapQuest = questdlg(prompt, titleTxt,'Peak','Trough','Zero','Peak');
+                    if isempty(snapQuest)
+                        % Default is Peak
+                        snapQuest = 'Peak';
+                    end
+                    if strcmp(snapQuest,'Peak')
+                        snap = 'peak';
+                    elseif strcmp(snapQuest,'Trough')
+                        snap = 'trough';
+                    elseif strcmp(snapQuest,'Zero')
+                        snap ='zero';
+                    end
+                end
+                % Zoom Trace Dispay
+                if isZoom
+                    zoom on;
+                    display(['Zoom Trace Display: Press Any Key to Continue'])
+                    display(' ')
+                    pause()
+                    zoom off;
+                end
+                
+                [x,t] = ginput(1); % Plant the Seed
+                x = floor(x); t = floor(t); % Round Index to Integer Value
+                if x == 0;
+                    x = 1;  % Check Array Index
+                end
+                
+                look = 3;   % Window Dimension (2.*look+1,look)
+                fore = 25;  % Step Distance for Next Prediction
+                pace = 1;   % Counter
+                
+                % Prevent Bad Seed Pick and Subsequent Errors
+                while x < 1 || x > size(Radar{jj,ii},2) || t < 1 || ...
+                        t > size(Radar{jj,ii},1) || (size(Radar{jj,ii},2))-x <= look-fore
+                    display('Pick Index Out of Range: Re-Pick the Seed')
+                    [x,t] = ginput(1); % Plant the Seed
+                    x = floor(x); t = floor(t); % Round Index to Integer Value
+                    if x == 0;
+                        x = 1;  % Check Array Index
+                    end
+                end
+                
+                pickT{jj,kk,ii}(pace) = t;
+                pickX{jj,kk,ii}(pace) = x;
+                
+                % Plot Seed Pick on Current Figure
+                if strcmp(snap,'peak')
+                    figure(gcf);plot(x,t,'.','color',peakColor);
+                end
+                if strcmp(snap,'trough')
+                    figure(gcf);plot(x,t,'.','color',troughColor);
+                end
+                if strcmp(snap,'zero')
+                    tp = t;
+                    tt = t;
+                    pickTP{jj,kk,ii}(pace) = tp;
+                    pickTT{jj,kk,ii}(pace) = tt;
+                    figure(gcf);plot(x,tt,'.','color',troughColor);
+                    figure(gcf);plot(x,tp,'.','color',peakColor);
+                end
+                
+                % Polar Coordinate Transform
+                % Matrix of T Coodinate Indicies Forward Centered on Pick
+                T = repmat(-look:look,look,1)';
+                % Matrix of X Coodinate Indicies Forward Centered on Pick
+                X = repmat(0:look-1,2.*look+1,1);
+                % Matrix of Radial Distances Forward Centered on Pick
+                D = sqrt(T.^2+X.^2);
+                % Matrix of Degree Theta Forward Centered on Pick
+                O = asind(X./D);
+                % Find NaN at Origin
+                nanIx = find(isnan(O));
+                [NaNjj,NaNii] = ind2sub(size(O),nanIx);
+                % Replace NaN with 90 Degrees
+                O(NaNjj,NaNii) = 90;
+                % Keep Theta Sign Information in Quadrant 2
+                O(1:look,:) = 180-O(1:look,:);
             end
-            if strcmp(snapQuest,'Peak')
-                snap = 'peak';
-            elseif strcmp(snapQuest,'Trough')
-                snap = 'trough';
-            elseif strcmp(snapQuest,'Zero')
-                snap ='zero';
-            end
-        end
-        % Zoom Trace Dispay
-        if isZoom
-            zoom on;
-            display(['Zoom Trace Display: Press Any Key to Continue'])
-            display(' ')
-            pause()
-            zoom off;
-        end
-        
-        [x,t] = ginput(1); % Plant the Seed
-        x = floor(x); t = floor(t); % Round Index to Integer Value
-        if x == 0;
-            x = 1;  % Check Array Index
-        end
-        
-        look = 3;   % Window Dimension (2.*look+1,look)
-        fore = 10;  % Step Distance for Next Prediction
-        pace = 1;   % Counter
-        
-        % Prevent Bad Seed Pick and Subsequent Errors
-        while x < 1 || x > size(Radar{jj,ii},2) || t < 1 || ...
-                t > size(Radar{jj,ii},1) || (size(Radar{jj,ii},2))-x <= look-fore
-            display('Pick Index Out of Range: Re-Pick the Seed')
-            [x,t] = ginput(1); % Plant the Seed
-            x = floor(x); t = floor(t); % Round Index to Integer Value
-            if x == 0;
-                x = 1;  % Check Array Index
-            end
-        end
-        
-        pickT{jj,kk,ii}(pace) = t;
-        pickX{jj,kk,ii}(pace) = x;
-        
-        % Plot Seed Pick on Current Figure
-        if strcmp(snap,'peak')
-            figure(gcf);plot(x,t,'.','color',peakColor);
-        end
-        if strcmp(snap,'trough')
-            figure(gcf);plot(x,t,'.','color',troughColor);
-        end
-        if strcmp(snap,'zero')
-            tp = t;
-            tt = t;
-            pickTP{jj,kk,ii}(pace) = tp;
-            pickTT{jj,kk,ii}(pace) = tt;
-            figure(gcf);plot(x,tt,'.','color',troughColor);
-            figure(gcf);plot(x,tp,'.','color',peakColor);
-        end
-        
-        % Polar Coordinate Transform
-        % Matrix of T Coodinate Indicies Forward Centered on Pick
-        T = repmat(-look:look,look,1)';
-        % Matrix of X Coodinate Indicies Forward Centered on Pick
-        X = repmat(0:look-1,2.*look+1,1);
-        % Matrix of Radial Distances Forward Centered on Pick
-        D = sqrt(T.^2+X.^2);
-        % Matrix of Degree Theta Forward Centered on Pick
-        O = asind(X./D);
-        % Find NaN at Origin
-        nanIx = find(isnan(O));
-        [NaNjj,NaNii] = ind2sub(size(O),nanIx);
-        % Replace NaN with 90 Degrees
-        O(NaNjj,NaNii) = 90;
-        % Keep Theta Sign Information in Quadrant 2
-        O(1:look,:) = 180-O(1:look,:);
-        
         while x<size(Radar{jj,ii},2)-look
             % Check CallBack Command for RePick
             if ~isPicking
@@ -456,7 +465,7 @@ for ii = 1:nFiles
             
             % Smoothly Interpolate Picks Across all Traces
             pickT{jj,kk,ii} = round(nonParametricSmooth...
-                (pickX{jj,kk,ii},pickT{jj,kk,ii},1:size(Radar{jj,ii},2),fore));
+                (pickX{jj,kk,ii},pickT{jj,kk,ii},1:size(Radar{jj,ii},2),(2.*fore)+1));
             % Extrapolate NaN Values on Edges
             pickT{jj,kk,ii} = inpaint_nans(pickT{jj,kk,ii},1);
             pickX{jj,kk,ii} = 1:size(Radar{jj,ii},2);
@@ -487,35 +496,55 @@ for ii = 1:nFiles
             % Advance Horizon
             kk = kk + 1;
             
+            % Ensure isClear
+            isClear = 1;            
             % Ensure isPicking
             isPicking = 1;
             
             case 'No'
+            % Construct a questdlg to Accept or Reject Picks
+            prompt = ['*',blanks(17),'Clear all picks?',blanks(17),'*'];
+            titleTxt = ['File: ' num2str(ii,'%02d'),' Channel: ',...
+            num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')];
+            questClearPick = questdlg(prompt, titleTxt,'Yes','No','No');
             display(['RePick File: ' num2str(ii,'%02d'),' Channel: ',...
                 num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')])
             display(' ')
             
-            % Clear Bad Picks
-            Reject = get(gca,'Children');
-            nRejectPicks = length(pickT{jj,kk,ii});
-            if strcmp(snap,'zero')
-                % Remove Peak and Trough Picks if Zero-Corssing
-                nRejectPicks = length(pickTT{jj,kk,ii})+...
-                    length(pickTP{jj,kk,ii});
+            if strcmp(questClearPick,'Yes')
+                % Clear Bad Picks
+                Reject = get(gca,'Children');
+                nRejectPicks = length(pickT{jj,kk,ii});
+                if strcmp(snap,'zero')
+                    % Remove Peak and Trough Picks if Zero-Corssing
+                    nRejectPicks = length(pickTT{jj,kk,ii})+...
+                        length(pickTP{jj,kk,ii});
+                end
+                
+                % Delete Graphics
+                delete(Reject(1:nRejectPicks))
+                % Clear Graphics Memory
+                Reject(1:nRejectPicks) = [];
+                % Clear Bad Picks
+                pickTP{jj,kk,ii} = [];
+                pickTT{jj,kk,ii} = [];
+                pickT{jj,kk,ii} = [];
+                pickX{jj,kk,ii} = [];
+                
+                % Ensure isClear
+                isClear = 1;
+                % Ensure isPicking
+                isPicking = 1;
             end
             
-            % Delete Graphics
-            delete(Reject(1:nRejectPicks))
-            % Clear Graphics Memory
-            Reject(1:nRejectPicks) = [];
-            % Clear Bad Picks
-            pickTP{jj,kk,ii} = [];
-            pickTT{jj,kk,ii} = [];
-            pickT{jj,kk,ii} = [];
-            pickX{jj,kk,ii} = [];
-            
-            % Ensure isPicking
-            isPicking = 1;
+            if strcmp(questClearPick,'No')
+                % Ensure Not Clear
+                isClear = 0;
+                % Ensure Not isPicking
+                isPicking = 0;
+                % Make True x Position 
+                x=size(Radar{jj,ii},2)-(look+1);
+            end
             
         end
         end
