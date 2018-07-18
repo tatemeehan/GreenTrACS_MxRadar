@@ -78,7 +78,7 @@ isParallel = 1;
 
 % Read Data
 isReadSensorsSoftware = 1;     % Read Multiplexed Data
-isLoadTimeHorizons = 0;        % Load Previously Picked Time Horizons
+isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 
 % Export Data
 isWriteTimeHorizons = 0;
@@ -86,7 +86,7 @@ isWriteTimeHorizons = 0;
 % Process Data
 isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
 isKill = 0;             % Kill Unanted Channels
-isFXdecon = 1;          % Fx-Predicitive Deconvolution
+isFXdecon = 0;          % Fx-Predicitive Deconvolution
 isSWEDISH = 1;          % Perform Surface Velocity Analysis
 
 %% Control Parallelization
@@ -136,7 +136,7 @@ if isReadSensorsSoftware
         
         % Read Data
         filepath = fullfile(dataDir,filename);
-        [Rad{ii},hdr1,trhd{ii},dt,f0,~,dx] = readSensorsSoftwareData( filepath );
+        [Rad{ii},hdr1,trhd{ii},dt,f0,~,dx,date] = readSensorsSoftwareData( filepath );
         
         [~, multiplexNtrcs] = size(Rad{ii});% No. Traces in Multiplexed Data
         
@@ -147,7 +147,7 @@ if isReadSensorsSoftware
                 % 9 Channel Offsets
                 txGeo = [0, 0, 0, 1.33, 1.33, 1.33, 2.67, 2.67, 2.67]; % Tx Sequence & Absolute Position
                 rxGeo = [4, 8, 12, 4, 8, 12, 4, 8, 12]; % Rx Sequence & Absolute Position
-            elseif nChan == 6
+            elseif nChan == 6 && ~isKill
                 % 6 Channel Offsets
                 txGeo = [1.33, 1.33, 1.33, 2.67, 2.67, 2.67]; % Tx Sequence & Absolute Position
                 rxGeo = [4, 8, 12, 4, 8, 12]; % Rx Sequence & Absolute Position
@@ -219,7 +219,7 @@ if isReadSensorsSoftware
         % Kill Unwanted Channels
         if isKill
             if ii == 1;
-                killChan = [7];         % Kill Channel Number
+                killChan = [1,4,7];         % Kill Channel Number
                 liveChan(killChan) = [];% Array of Live Channels
                 % Update Killed Channel Shifts
                 chanShift(killChan) = [];
@@ -318,12 +318,16 @@ if isReadSensorsSoftware
 end
 %% Concatenate Files
     % Grab Early Time Data For AirWave Cross Correlation Alignment
-    % 2016
+    % 2016 Approximate Direct Wave Arrival Times
+    if strcmp(date(1:4),'2016')
         xcorrWindow = [30, 105, 180, 0, 80, 145, -20, 45, 130;...
                     60, 150, 210, 40, 110, 175, 5, 80, 160] + padding;
-    % 2017
-%     xcorrWindow = [175, 250, 85, 140, 230, 75, 100, 180, 25;...
-%                     200, 300, 150, 160, 260, 115, 150, 220, 75] + padding;
+    end
+    % 2017 Approximate Direct Wave Arrival Times
+    if strcmp(date(1:4),'2017')
+        xcorrWindow = [175, 250, 85, 140, 230, 75, 100, 180, 25;...
+                    200, 300, 150, 160, 260, 115, 150, 220, 75] + padding;
+    end
     if isKill
         xcorrWindow(:,killChan) = [];
     end
@@ -375,8 +379,20 @@ end
 %% Snow Water Equivalent and Density for Ice Sheet Height
 if isSWEDISH
     if isLoadTimeHorizons
-        TimeHorizonFilename = '';
+        TimeHorizonFilename = '6-2-16-Core7-Spur-W-TimeHorizon.mat';
         load(TimeHorizonFilename);
+        if isKill
+        % Remove Killed Offsets
+        DirectFBpick(killChan,:) = [];
+        ReflectionFBpick(killChan,:) = [];
+        end
+        % Hacks 10-23-17
+        % Remove Noisy Horizon
+%         ReflectionFBpick(:,[10]) = [];
+%         ReflectionFBpick(:,[3,9,10]) = [];
+        % Correct Bad Horizon Pick
+        StaticCorrectionChan = find(offsetArray == 8);
+        ReflectionFBpick{StaticCorrectionChan,6} = ReflectionFBpick{StaticCorrectionChan,6}+4.6;
         % Determine Number of Direct Wave Horizons
         nDirectHorizon = size(DirectFBpick,2);
         % Determine Number of Reflection Horizons
@@ -466,13 +482,26 @@ if isSWEDISH
     fprintf('Begin Horizon Velocity Analysis \n')
     display(' ')
     tic
-% Run Memory Allocation    
-HVAmemoryAllocation
+    
+    % Toggle Inversion Scheme
+    % Air-Coupled Wave Soltion
+    isL1Air = 0;
+    isL2Air = 1;
+    % Surface-Coupled Wave
+    isL1LMO = 0;
+    isL2LMO = 1;
+    % Reflected Wave
+    isL1NMO = 1;
+    isL2NMO = 0;
+    
+    % Run Memory Allocation
+    HVAmemoryAllocation
 
 % Extract AirWave Picks and Perform Residual Subtraction Velocity Analysis
 %     parfor (ii = 1:nFiles, nWorkers - (nWorkers-nFiles)) 
     for ii = 1:nFiles
-        looper = 1:size(Radar{ii},2);
+%         looper = 1:size(Radar{ii},2);
+          looper = 1:nTrace;
         % Concatenate Air Wave Picks
         for dh = 1:nDirectHorizon
             % Concatenate Primary Reflection Picks for Horizon hh
@@ -500,10 +529,15 @@ HVAmemoryAllocation
                         xvalOffset = offsetArray(xvalIx);
                         
                         % Compute Air Wave Arrival Velocity and Intercept Time
-                        % OLS Scheme
-                        % [xVair{ii,jj}(kk,1), ~] = DirectWave(xvalOffset,xvalAirPick);
                         % IRLS Scheme
-                        [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWaveIrls(xvalOffset,xvalAirPick);
+                        if isL1Air
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWaveIrls(xvalOffset,xvalAirPick);
+                        end
+                        % OLS Scheme
+                        if isL2Air
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)] = DirectWave(xvalOffset,xvalAirPick);
+                        end
+                       
                     end
                     
                     % Residual Error Analysis
@@ -551,7 +585,8 @@ HVAmemoryAllocation
                     isManyShots = 1;
                     if isManyShots
                         shotRange = 5;
-                        ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
+                        ranger = sqrt(([1:nTrace]-jj).^2); % Compute Distance
+%                         ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
                         getIx = find(ranger<=shotRange); % Find Nearby Picks
                         DirPick = DirectPicks(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
                         DirPick = DirPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
@@ -572,12 +607,16 @@ HVAmemoryAllocation
                             xvalOffset = offsetArray(xvalIx);
                             
                             % Compute Air Wave Arrival Velocity and Intercept Time
+                            if isL2LMO
                             % OLS Scheme
-                            % [xVair{ii,jj}(kk,1), xToAir{ii,jj}(kk,1)]...
-                            %   = DirectWave(xvalOffset,xvalAirPick);
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
+                              = DirectWave(xvalOffset,xvalDirPick);
+                            end
                             % IRLS Scheme
+                            if isL1LMO
                             [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
                                 = DirectWaveIrls(xvalOffset,xvalDirPick);
+                            end
                         end
                     end
                     % Single Shot Gather in Population
@@ -599,12 +638,16 @@ HVAmemoryAllocation
                             xvalOffset = offsetArray(xvalIx);
                             
                             % Compute Air Wave Arrival Velocity and Intercept Time
+                            if isL2LMO
                             % OLS Scheme
-                            % [xVair{ii,jj}(kk,1), xToAir{ii,jj}(kk,1)]...
-                            %   = DirectWave(xvalOffset,xvalAirPick);
+                            [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
+                              = DirectWave(xvalOffset,xvalDirPick);
+                            end
                             % IRLS Scheme
+                            if isL1LMO
                             [xVdir{dh,jj,ii}(kk,1), xToDir{dh,jj,ii}(kk,1)]...
                                 = DirectWaveIrls(xvalOffset,xvalDirPick);
+                            end
                         end
                     end
                     
@@ -672,7 +715,8 @@ HVAmemoryAllocation
 
 % Primary Reflection Velocity Analysis               
     for ii = 1:nFiles
-        looper = 1:size(Radar{ii},2);
+        looper = 1:nTrace;
+%         looper = 1:size(Radar{ii},2);
         for rh = 1:nReflectionHorizon
         % Concatenate Primary Reflection Picks for Horizon hh
         GatherReflectionPicks{rh,ii} = cat(2,ReflectionFBpick{:,rh,ii});
@@ -684,7 +728,8 @@ HVAmemoryAllocation
             isManyShots = 1;
             if isManyShots
                 shotRange = 5;
-                ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
+                ranger = sqrt(([1:nTrace]-jj).^2); % Compute Distance                
+%                 ranger = sqrt(([1:size(Radar{ii},2)]-jj).^2); % Compute Distance
                 getIx = find(ranger<=shotRange); % Find Nearby Picks
                 RefPick = Reflection(getIx,:) - vertcat(deltaT{ii,getIx}); % Residual Static Corection
                 RefPick = RefPick - vertcat(AirTo{ii,getIx})*ones(1,nChan); % Time-Zero Static Shift
@@ -715,11 +760,15 @@ HVAmemoryAllocation
                     
                     % Compute Reflected Arrival Velocity and Intercept Time
                     % IRLS Scheme
-                    [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
-                        = VrmsIrls(xvalOffset,xvalRefPick);
+                    if isL1NMO
+                        [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                            = VrmsIrls(xvalOffset,xvalRefPick);
+                    end
                     % OLS Scheme
-%                 [xVref{ii,jj}(kk,1), xToRef{ii,jj}(kk,1), xDepth{ii,jj}(kk,1)] ...
-%                     = Vrms(xvalOffset,xvalRefPick);
+                    if isL2NMO
+                        [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                            = Vrms(xvalOffset,xvalRefPick);
+                    end
                     end
                 end
                 if isSingleShot
@@ -734,12 +783,16 @@ HVAmemoryAllocation
                         xvalRefPick = RefPick(xvalIx);
                         xvalOffset = offsetArray(xvalIx);                    
                     % Compute Reflected Arrival Velocity and Intercept Time
-                    % OLS Scheme
-                    % [xVref{ii,jj}(kk,1), xToRef{ii,jj}(kk,1), xDepth{ii,jj}(kk,1)] ...
-                    %   = Vrms(xvalOffset,xvalRefPick);
                     % IRLS Scheme
-                    [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
-                        = VrmsIrls(xvalOffset,xvalRefPick);    
+                    if isL1NMO
+                        [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                            = VrmsIrls(xvalOffset,xvalRefPick);
+                    end
+                    % OLS Scheme
+                    if isL2NMO
+                        [xVref{rh,jj,ii}(kk,1), xToRef{rh,jj,ii}(kk,1), xDepth{rh,jj,ii}(kk,1)] ...
+                            = Vrms(xvalOffset,xvalRefPick);
+                    end
                     end
                 end
 
@@ -881,10 +934,10 @@ else    % If No Time Correction is Used ~ Not Recommended
 end
 
 %% Save HVA Output
-isSaveHVA = 0;
+isSaveHVA = 1;
 if isSaveHVA
     % Save Rough Results
-    HVAfilename = '6-2-16-Core7-Spur-W-HVA.mat';
+    HVAfilename = '6-2-16-Core7-HVA-100-12h.mat';
     save(HVAfilename,'DirectTo','DirectToVar','deltaT',...
     'DirectVelocity','DirectVelocityVar','DirectDepth','DirectDepthVar',...
     'DirectDensity','DirectDensityVar','CovarianceDepthDensityDirect',...
@@ -897,7 +950,7 @@ if isSaveHVA
     'SWEvar','SWEintVar','-v7.3');
 
     % Save Smooth Results
-    HVAsmoothFilename = '6-2-16-Core7-Spur-W-HVA.mat';
+    HVAsmoothFilename = '6-2-16-Core7-HVAsmooth-100-12h.mat';
     save(HVAsmoothFilename,'TWT','TWTvar','SnowWaterEqv',...
         'SnowWaterEqvVar','Density','DensityVar','Depth','DepthVar','LayerSnowWaterEqv',...
         'LayerSnowWaterEqvVar','LayerDensity','LayerDensityVar','LayerThickness',...
