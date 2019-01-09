@@ -14,21 +14,62 @@
 
     Rad = cell(1,nFiles);
     trhd = cell(1,nFiles);
-    Year = zeros(nFiles,1);
+%     GPS = cell(1,nFiles);
+    Year = cell(1,nFiles);
+    
     for ii = 1 : nFiles
         tic
         %------------------------------------------------------------------
         % Multiplexed Channel Record
-        if lineNo(ii)<10
-            filename=['LINE0' num2str(lineNo(ii))];
-        else
-            filename=['LINE' num2str(lineNo(ii))];
-        end
-        
-        % Read Data
+        filename = fileNames(lineNo(ii)+1).name;
         filepath = fullfile(dataDir,filename);
-        [Rad{ii},hdr1,trhd{ii},dt,f0,~,dx,date] = readSensorsSoftwareData( filepath );
-        Year(ii) = str2num(date(1:4));
+        % Read netCDF data file
+        ncRad = ncread(filepath,'DATA');
+        trhd{ii} = ncRad(1:25,:);
+        Rad{ii} = ncRad(26:end,:);
+        clear('ncRad');
+        f0 = (trhd{ii}(9,1)); % [MHz]
+        dt = trhd{ii}(7,1)/1000; % [ns]
+        dx = diff(trhd{ii}(2,1:2)); % [m]
+        % Need to Automate Offset Array from .nc File
+%         offsetArray = unique(trhd{ii}(22,1:100));
+
+        % Configure GPS
+        if isLoadGPS
+            % GPS = [X,Y,Z,Distance,Slope,Speed,Heading,Tailing];
+            GPSixEdges = GeoLocation.GPSixEdges(:,ii);
+            GPSix = GPSixEdges(1):GPSixEdges(2);
+            Year{ii} = GeoLocation.Date{GPSix(1)}(1:4);
+            GPS = [GeoLocation.X(GPSix),GeoLocation.Y(GPSix),...
+                GeoLocation.Z_EGM08(GPSix)];
+            dX = GeoLocation.dX(GPSix);
+            dY = GeoLocation.dY(GPSix);
+            dZ = GeoLocation.dZ(GPSix);
+            
+            % Compute Distance
+            dS = sqrt(dX.^2+dY.^2+dZ.^2);
+            if ii>1
+                Distance = endDist+cumsum(dS);
+            else
+                Distance = cumsum(dS); %[m]
+            end
+            endDist = Distance(end);
+%             DistanceKm = Distance./1000; % [km]
+
+            % Slope [Degrees]
+            Slope = GeoLocation.Slope(GPSix);
+            
+            % Speed [m/s]
+            Speed = GeoLocation.Speed(GPSix);
+            
+            % Heading [Degrees]
+            Heading = GeoLocation.Heading(GPSix);
+            Tailing = mod(Heading+180,360);
+            GPS = [GPS,Distance,Slope,Speed,Heading,Tailing];
+            clear('GPSix','GPSixEdges','dS','dX','dY','dZ',...
+                'Distance','Slope','Speed','Heading','Tailing');
+        end
+ 
         % Nominal Frequency GHz
         f0GHz = f0/1000;
         % No. Traces in Multiplexed Data
@@ -53,6 +94,8 @@
         end
             
         offsetArray = rxGeo - txGeo;            % Offset Array for CMP Gather
+        midPointArray = mean([txGeo;rxGeo],1);  % Midpoint Locations Relative to Tx 1
+        trhd{ii}(21,:) = midPointArray([trhd{ii}(23,:)]); % Append Midpoint Locations
         nChan = length(offsetArray);            % Refresh nChan before kill
         farOffset = max(offsetArray);           % Determine Far Offset
         farChan = find(offsetArray == farOffset);
@@ -78,6 +121,7 @@
                 (Rad{ii}(:,nearChan:nChan:end), f0, dt );
             % Remove Duplicate Static Traces
             dupIx = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
+            clear('nearRad');
             
             trhd{ii}(:,dupIx) = [];         % Remove Static Trace Headers from Multiplexed Record
             trhd{ii}(1,:) = 1:length(trhd{ii}); % Configure Trace Indicies
@@ -90,6 +134,24 @@
             display(' ')
             
         end
+        
+        % Interpolate GPS
+        % GPS = [X,Y,Z,Distance,Slope,Speed,Heading,Tailing];
+        nGPS = size(GPS,1);
+        nTrcs = size(Rad{ii},2);
+        xq = linspace(1,nGPS,nTrcs);
+        % Piecewise Cubic Hermite Interpolating Polynomials
+        Si = pchip(1:nGPS,GPS(:,4),xq);
+        Xi = pchip(GPS(:,4),GPS(:,1),Si);
+        Yi = pchip(GPS(:,4),GPS(:,2),Si);
+        Zi = pchip(GPS(:,4),GPS(:,3),Si);
+        Sxi= pchip(GPS(:,4),GPS(:,5),Si);
+        Vi = pchip(GPS(:,4),GPS(:,6),Si);
+        Hi = pchip(GPS(:,4),GPS(:,7),Si);
+        Ti = pchip(GPS(:,4),GPS(:,8),Si);
+        % Append GPS to Trace Header
+        trhd{ii}(13:20,:) = [Xi;Yi;Zi;Si;Sxi;Vi;Hi;Ti];
+        clear('GPS','nGPS','nTrcs','Si','Xi','Yi','Zi','Sxi','Vi','Hi','Ti','xq');
         
         % Remove Skip Traces if Wheel Odometer Acquisition
         if isOdometer
@@ -139,12 +201,13 @@
             nearOffset = min(offsetArray);          
             nearChan = find(offsetArray == nearOffset);
         end
-        
+        clear('dupIx','gainIx','killIx');
+
         % Pad Data with Instrument Zero
-        if strcmp(date(1:4),'2016')
+        if strcmp(Year{ii},'2016')
             padding = 50;
         end
-        if strcmp(date(1:4),'2017')
+        if strcmp(Year{ii},'2017')
             padding = 0;
         end
         instrumentPad = zeros(padding,size(Rad{ii},2));
@@ -165,17 +228,36 @@
         % Allocation Here
         if ii == 1
             Radar = cell(nChan,nFiles); traceIx = cell(nChan,nFiles);
-            Array = cell(nChan,nFiles);
+%             Array = cell(nChan,nFiles);
         end
         
-        parfor (jj =  1:nChan, nWorkers)
-%         for jj = chan
+%         parfor (jj =  1:nChan, nWorkers)
+        for jj = chan
             % DeMux Sequential Data
-            [Radar{jj,ii}, traceIx{jj,ii}, Array{jj,ii}] = DeMux(Rad{ii}, trhd{ii}, liveChan(jj));
-            
+            % GPS DeadReckoning Within Demux
+                % Calculate Truer Antenna Positions using Array Geometry
+            [Radar{jj,ii},trhd{ii},traceIx{jj,ii},~] = DeMux(Rad{ii},trhd{ii},liveChan(jj),isLoadGPS);
+        end
+        
+        multiplexNtrcs = size(trhd{ii},2);% Length of Multiplex
+        traceMod = mod(multiplexNtrcs,nChan);% Count Unbinned Traces
+        trhd{ii}(:,(multiplexNtrcs - traceMod)+1 :multiplexNtrcs ) = []; % Remove Unbinned Trace Headers
+
+        % Average Positions for Bin Centers (The GPS Location and Distance)
+        if isLoadGPS
+            for jj = 1:nChan:size(trhd{ii},2)
+                % Store Bin Centers [m]
+                trhd{ii}(10:12,jj:jj+nChan-1) = mean(trhd{ii}(13:15,jj:jj+nChan-1),2)*ones(1,nChan);
+                % Overwrite Distance with Bin Center Position [m]
+                trhd{ii}(2,jj:jj+nChan-1) = mean(trhd{ii}(16,jj:jj+nChan-1),2)*ones(1,nChan);
+            end
+        end
+        
+
+        parfor (jj =  1:nChan, nWorkers)
+
             % Extract Full-fold Traces & Sort Antenna Positions
-            gatherLength = length(Array{jj,ii}(1,:)); % Length of Each Chan
-            traceMod = mod(length(xArray),nChan); % Un-folded Channel Index
+            gatherLength = size(Radar{jj,ii},2); % Length of Each Channel
             
             % Flag Un-binned Traces
             if jj <= traceMod
@@ -207,14 +289,16 @@
                 end
                 
                 % Process Common Offset Channels
-                disp(' ')           
-                fprintf(['Begin Signal Processing in Common-Offset Domain ',...
-                    filename, ' CHAN0', num2str(jj),'\n'])
+%                 disp(' ')           
+%                 fprintf(['Begin Signal Processing in Common-Offset Domain ',...
+%                     filename, ' CHAN0', num2str(jj),'\n'])
 
                 Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt );               
 
         end
+        
         fprintf('Signal Processing Done \n')
         toc
         display(' ')
     end
+    clear('Rad')
