@@ -86,6 +86,7 @@ isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 isPolarPicker = 0;             % Pick Travel-Time Horizons
 isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
+isLoadGPS = 1;                 % Load GPS for MxRadar
 
 % Export Data
 isWriteTimeHorizons = 0;
@@ -120,7 +121,8 @@ load(['LateNite.mat']);load(['Smoke.mat']); load(['yet_white.mat']);
 load(['SplitJet.mat']);
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
-lineNo = [0,1,2];               % Array of data "LINE" numbers
+fileNames = dir([dataDir,'/','*.nc']);
+lineNo = [0,1,2,4,7];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
@@ -141,7 +143,10 @@ if isLoadHVA
 end
 
 %% Import GPS Information
-% Yet Completed
+addpath '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+if isLoadGPS
+    load('MxRadarGPSCore15SpurW061317.mat')
+end
 %% Read GPR Data
 if isReadSensorsSoftware
 
