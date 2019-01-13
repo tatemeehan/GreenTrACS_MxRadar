@@ -1,6 +1,8 @@
 %% Read Sensors and Software Data
 % This Script Reads the Binary Multi-channel GPR Data and Performs the
 % pre-processing and signal processing routines. 
+% GPS Locations are incorporated in NSIDC Sea Ice Polarstereographic North
+%
 % The Array Geometry is Installed
 % The Acquisition Method is Decided
 % The Near Channel (7) is Killed
@@ -231,7 +233,6 @@
 %             Array = cell(nChan,nFiles);
         end
         
-%         parfor (jj =  1:nChan, nWorkers)
         for jj = chan
             % DeMux Sequential Data
             % GPS DeadReckoning Within Demux
@@ -249,9 +250,12 @@
                 % Store Bin Centers [m]
                 trhd{ii}(10:12,jj:jj+nChan-1) = mean(trhd{ii}(13:15,jj:jj+nChan-1),2)*ones(1,nChan);
                 % Overwrite Distance with Bin Center Position [m]
-                trhd{ii}(2,jj:jj+nChan-1) = mean(trhd{ii}(16,jj:jj+nChan-1),2)*ones(1,nChan);
+                tmp = mean(trhd{ii}(16,jj:jj+nChan-1),2)*ones(1,nChan);
+                % Zero Starting Distance
+                trhd{ii}(2,jj:jj+nChan-1) = tmp - tmp(1);
             end
         end
+        clear('tmp')
         
 
         parfor (jj =  1:nChan, nWorkers)
