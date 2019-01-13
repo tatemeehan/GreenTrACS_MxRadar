@@ -33,4 +33,8 @@
             catRadar{jj} = [Radar{jj,:}];
         end
          Radar = catRadar; clear catRadar;
+         tmptrhd = [trhd{:}];
+         trhd = cell(1,nFiles);
+         trhd{nFiles} = tmptrhd;
+         clear('tmptrhd');
     end
