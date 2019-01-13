@@ -20,6 +20,8 @@
 
 
     % Estimate of Mean Annual Temperature
+    % Incorporate Birkle Data
+    
 %     annualT = -18; % [C]     
 %     annualT = -19; % [C]    
 %     annualT = -20; % [C]
