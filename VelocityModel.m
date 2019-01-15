@@ -1,5 +1,18 @@
-%% Velocity Model
-% This Routine Build the 2-D Velocity Model
+%% Velocity Model produces the MxHL firn desnity model.
+% The Herron and Langway (1980) model requires input properties for average
+% annual snow accumulation, average annual temperature, and the average 
+% 1 - 2 m snow density. GreenTrACS ice cores are chemically dated by a 
+% continuous melting process (Osterberg et al., 2006; Graeter et al. 2017),
+% and provide the known average accumulation through the time period of
+% modern reanalyis models. The radar estimates are tranfered to this
+% calibration and further estimate deviations from the (~1980 - 2017 mean).
+% Average annual temperature is estimated from GreenTrACS reanalysis data 
+% available via the Arctic Data Center: 
+% Sean Birkel. 2018. Greenland surface mass balance derived from climate 
+% reanalysis models, 1979-2017. Arctic Data Center. doi:10.18739/A2D21RH75.
+%
+% Tate Meehan, Boise State University, NASA ISGC 2019
+% This Routine Build the 2-D EM Velocity Model 
     % Allocation
     AverageAccumulation = cell(nFiles,1);
     StackingVelocity = cell(nFiles,1);
@@ -10,22 +23,43 @@
     Traverse = cell(nFiles,1);
     TraverseX = cell(nFiles,1);
     StackDepth = cell(nFiles,1);
+    XY = cell(nFiles,1);
     
-    % Annual Accumulation Correction from Pit 15W [.Percent]
-    % This is the depth Bias Correction Factor
-%     normSWE = 0.0990;
     % Annual Accumulation Correction from Core 15 Chemistry [mwe]
     % 50 year mean is ~0.299 [mwe]
     accumulationAvg = 0.299;
+    iceCoreLL = [73.592732,-47.197152];
+    iceCoreXY = ll2psn(iceCoreLL(1),iceCoreLL(2));
+    % Extract Radar Measurments Nearest to Ice Core.
+    if isLoadGPS
+        k = 100; % Number of Radar Estimates to Estimate Core Site Average
+    if isCat
+        iceCoreFileIx = 1;
+    [~,iceCoreIx] = mink(sqrt((iceCoreXY(1)-trhd{1}(10,1:nChan:end)).^2 ...
+    + (iceCoreXY(1)-trhd{1}(11,1:nChan:end)).^2),k);
 
-
-    % Estimate of Mean Annual Temperature
-    % Incorporate Birkle Data
+    else 
+        for ii = 1:nFiles
+            [iceCoreDistance(ii,1:k),iceCoreIx(ii,1:k)] = mink(sqrt((iceCoreXY(1)-trhd{ii}(10,1:nChan:end)).^2 ...
+    + (iceCoreXY(1)-trhd{ii}(11,1:nChan:end)).^2),k);
+        end
+        [~,iceCoreFileIx] = min(mean(iceCoreDistance,2));
+        iceCoreIx = iceCoreIx(iceCoreFileIx,:);
+    end
+    else
+        % If Radar is not Paired with GPS assume Ice Core is located 
+        % adjacent to the first k traces of the first radar file
+        iceCoreFileIx = 1;
+        iceCoreIx = 1:k;        
+    end
     
+    % Estimate of Mean Annual Temperature    
+    isLoadT2 = 1;
 %     annualT = -18; % [C]     
 %     annualT = -19; % [C]    
 %     annualT = -20; % [C]
     annualT = -21.5; % [C]    
+
 
     % Array of Model Depths
     maxDepth = 30.001;
@@ -35,21 +69,39 @@
     StackH = diff(StackZ);StackH = [StackZ(1);StackH];
     
     for ii = 1:nFiles
-        % Array of Approximate Distance
-        Traverse{ii} = linspace(0,TraverseDistance(ii),length(dhDensity{2,1}));
-        % Distance Grid
-        TraverseX{ii} = ones(length(StackZ),1)*Traverse{ii};
-        % Depth Grid
-        StackDepth{ii} = StackZ*ones(1,length(Traverse{ii}));
+        if isLoadGPS
+            % Coordinate Positions
+            XY{ii} = [trhd{ii}(10,1:nChan:end);trhd{ii}(11,1:nChan:end)];
+            Traverse{ii} = trhd{ii}(2,1:nChan:end);
+            % Distance Grid
+            TraverseX{ii} = ones(length(StackZ),1)*Traverse{ii};
+            % Depth Grid
+            StackDepth{ii} = StackZ*ones(1,length(Traverse{ii}));
+            
+            if isLoadT2
+                t2Dir = 'E:\ArcticDataCenter\Data\Birkle';
+                t2file = 'merra_t2_1979-2012_monthly.nc';
+                [annualT] = reanalysisT2(dataDir,t2file,XY{ii});
+            end
+        else
+            % Array of Approximate Distance
+            Traverse{ii} = linspace(0,TraverseDistance(ii),length(dhDensity{2,1}));
+            % Distance Grid
+            TraverseX{ii} = ones(length(StackZ),1)*Traverse{ii};
+            % Depth Grid
+            StackDepth{ii} = StackZ*ones(1,length(Traverse{ii}));
+        end
+        
         for jj = 1:length(ForcingDensity{ii})
             % Extract Radar Forcing for Herron-Langway Model
             surfHL = ForcingDensity{ii}(jj);
-%             accuHL = SnowWaterEqv{1,ii}(jj);% - (normSWE.*SnowWaterEqv{1,ii}(jj));
-            
-            accuHL = accumulationAvg + (SnowWaterEqv{1,ii}(jj) - mean(SnowWaterEqv{1,ii}(1:100)));
+            % radar estimates are tranfered to ice core accumulation 
+            accuHL = accumulationAvg + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
+                mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
             AverageAccumulation{ii}(jj) = accuHL;
             % Impose Herron-Langway (1980) Density Model
-            [HerronLangwayDensity{ii}(:,jj),HerronLangwayAge{ii}(:,jj)] = herronLangway(StackZ,annualT,surfHL,accuHL);
+            [HerronLangwayDensity{ii}(:,jj),HerronLangwayAge{ii}(:,jj)] = ...
+                herronLangway(StackZ,annualT,surfHL,accuHL);
             
             %%% Apply Surface Correction to Herron-Langway Model Here %%%
             radHLdepth0 = StackZ(2);
@@ -88,7 +140,7 @@
             % Compute Weights for Cumulative Average Density
             stackW = StackZ.^(-1).*tril(ones(length(StackH),1)*StackH');
 
-            % Cumulative Average Density is a Proxy for Stacking Velocity
+            % Cumulative Average Density as a Proxy for Stacking Velocity
             StackingDensity{ii}(:,jj) = stackW*HerronLangwayDensity{ii}(:,jj);
             
             % Estimate Stacking Velocity in Time
