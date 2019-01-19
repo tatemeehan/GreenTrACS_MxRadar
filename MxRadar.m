@@ -75,7 +75,8 @@ addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
 % addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
 % addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
-
+addpath './functions';
+addpath './supplementalData';
 %% Control Floe
 % Parallel Computing Enabled
 isParallel = 1;
@@ -84,7 +85,7 @@ isParallel = 1;
 isReadSensorsSoftware = 1;     % Read Multiplexed Data
 isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 isPolarPicker = 0;             % Pick Travel-Time Horizons
-isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
+isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 1;                 % Load GPS for MxRadar
 
@@ -122,7 +123,7 @@ load(['SplitJet.mat']);
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [0,1,2,4,7];               % Array of data "LINE" numbers
+lineNo = [0,1,2];%,4,7];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
