@@ -79,9 +79,10 @@
             StackDepth{ii} = StackZ*ones(1,length(Traverse{ii}));
             
             if isLoadT2
-                t2Dir = 'E:\ArcticDataCenter\Data\Birkle';
+                t2Dir = '/home/tatemeehan/GreenTracs2017/ClimateData/';
+%                 t2Dir = 'E:\ArcticDataCenter\Data\Birkle';
                 t2file = 'merra_t2_1979-2012_monthly.nc';
-                [annualT] = reanalysisT2(dataDir,t2file,XY{ii});
+                [annualT] = reanalysisT2(t2Dir,t2file,XY{ii});
             end
         else
             % Array of Approximate Distance
@@ -101,7 +102,7 @@
             AverageAccumulation{ii}(jj) = accuHL;
             % Impose Herron-Langway (1980) Density Model
             [HerronLangwayDensity{ii}(:,jj),HerronLangwayAge{ii}(:,jj)] = ...
-                herronLangway(StackZ,annualT,surfHL,accuHL);
+                herronLangway(StackZ,annualT(jj),surfHL,accuHL);
             
             %%% Apply Surface Correction to Herron-Langway Model Here %%%
             radHLdepth0 = StackZ(2);
