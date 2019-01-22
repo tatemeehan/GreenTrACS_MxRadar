@@ -4,6 +4,9 @@
 % These Parameters are Converted to Depth, Density, and Accumualtion with
 % their respective variances in this routine.
 
+% Surpress Parfor Temporary Variable Warning
+warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
+
 % Extract AirWave Picks and Perform Residual Subtraction Velocity Analysis
 %     parfor (ii = 1:nFiles, nWorkers - (nWorkers-nFiles)) 
     for ii = 1:nFiles

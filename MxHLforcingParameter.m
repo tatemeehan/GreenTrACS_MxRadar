@@ -1,6 +1,6 @@
 %% MxHL Forcing Parameterization
 % This Routine Estimates the Surface Density and Forcing Density for the 
-% MxHL modeland the uncertainties of these paramters. 
+% MxHL model and the uncertainties of these paramters. 
 
 if ~isSWEDISH
     % Determine Maximum File Size
