@@ -50,7 +50,7 @@
         
         MaxAge = floor(min(AgeModel{ii}(end,:)));
         Ages{ii} = [1,3:3:MaxAge];
-        Isochrones = abs(Year(ii) - Ages{ii});
+        Isochrones = abs(str2num(Year{ii}) - Ages{ii});
         for kk = 1:length(Isochrones)
         [~, AgeIx] = min(abs(AgeModel{ii}-Ages{ii}(kk)));
         AgeIx = sub2ind(size(DepthMatrix{ii}),AgeIx,1:length(AgeIx));

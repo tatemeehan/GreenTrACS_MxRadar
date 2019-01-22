@@ -419,6 +419,7 @@ if isDepthSection
     end
     %% Image Depth Section
     for ii = 1:nFiles
+%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
         figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
         colormap(Smoke);%hold on;
 %         for kk = 1:size(DepthAge{ii},2)
@@ -469,7 +470,6 @@ save('6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat','DirectFBpick','expo
     end
     
     % Save Modeled Output
-    % Must Include GPS!
     isSaveMxHL = 0;
     if isSaveMxHL
         MxHLFilename = 'GTC15SpurWMxHL.mat';

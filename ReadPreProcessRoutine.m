@@ -251,9 +251,12 @@
                 trhd{ii}(10:12,jj:jj+nChan-1) = mean(trhd{ii}(13:15,jj:jj+nChan-1),2)*ones(1,nChan);
                 % Overwrite Distance with Bin Center Position [m]
                 tmp = mean(trhd{ii}(16,jj:jj+nChan-1),2)*ones(1,nChan);
-                % Zero Starting Distance
-                trhd{ii}(2,jj:jj+nChan-1) = tmp - tmp(1);
+                trhd{ii}(2,jj:jj+nChan-1) = tmp;
             end
+            % Zero Starting Distance
+            tmp = trhd{1}(2,1);
+            trhd{ii}(2,:) = trhd{ii}(2,:) - tmp;
+            
         end
         clear('tmp')
         
