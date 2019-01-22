@@ -10,9 +10,10 @@ Ix = load('globe2greenland.txt');
 lon = ncread(fullfile(dataDir,t2file),'lon');
 lat = ncread(fullfile(dataDir,t2file),'lat');
 [glon,glat] = meshgrid(lon,lat);
+indx = sub2ind(size(glon),Ix(:,2),Ix(:,1));
 % Convert to -180, 180
 glon = mod((glon+180),360)-180;
-[x,y] = ll2psn(glat(Ix(:,3)),glon(Ix(:,3)));
+[x,y] = ll2psn(glat(indx),glon(indx));
 
 % This code functions smoothly with 2 meter air temperature data from:
 % Sean Birkel. 2018. Greenland surface mass balance derived from climate 
@@ -23,7 +24,7 @@ t2 = permute(t2,[2,1,3]);
 % Montly to Average 2m Air Temperatures for Reanalysis Period
 t2 = mean(t2,3);
 % Extract Tempuratures of Greenland only
-t2 = t2(Ix(:,3));
+t2 = t2(indx);
 % PSN Coordinates Axes for Greenland
 Xax = linspace(-652925,879625,numel(unique(Ix(:,1))));
 Yax = linspace(-3384425,-632675,numel(unique(Ix(:,2))));
