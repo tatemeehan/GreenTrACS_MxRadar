@@ -408,6 +408,13 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
         
         % Smooth Esitmates
         smoothR = 251;
+        if isReduceData
+            if mod(smoothR,2) == 0
+            smoothR = ceil(smoothR./rmNtrc);
+            else
+                smoothR = smoothR+1;
+            end
+        end
         TWT{rh,ii} = nonParametricSmooth( 1:length(ReflectionTo{rh,ii}),...
             ReflectionTo{rh,ii},1:length(ReflectionTo{rh,ii}),smoothR);
         TWTvar{rh,ii} = nonParametricSmooth( 1:length(ReflectionToVar{rh,ii}),...

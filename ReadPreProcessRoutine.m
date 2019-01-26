@@ -26,6 +26,9 @@
         filename = fileNames(lineNo(ii)+1).name;
         filepath = fullfile(dataDir,filename);
         % Read netCDF data file
+        disp(' ')
+        fprintf('Reading .nc File \n')
+        tic
         ncRad = ncread(filepath,'DATA');
         trhd{ii} = ncRad(1:25,:);
         Rad{ii} = ncRad(26:end,:);
@@ -38,6 +41,9 @@
 
         % Configure GPS
         if isLoadGPS
+            disp(' ')
+            fprintf('Configuring GPS \n')
+            tic
             % GPS = [X,Y,Z,Distance,Slope,Speed,Heading,Tailing];
             GPSixEdges = GeoLocation.GPSixEdges(:,ii);
             GPSix = GPSixEdges(1):GPSixEdges(2);
@@ -260,8 +266,11 @@
         end
         clear('tmp')
         
-
+        % Remove Every Nth Trace for Data Reduction
+        rmNtrc = 2;
+        
         parfor (jj =  1:nChan, nWorkers)
+%         for jj = 1:nChan
 
             % Extract Full-fold Traces & Sort Antenna Positions
             gatherLength = size(Radar{jj,ii},2); % Length of Each Channel
@@ -275,6 +284,15 @@
                 
                 % Remove un-Binned Common Offset Traces
                 Radar{jj,ii} = Radar{jj,ii}(:,1:gatherLength - xTrc);
+                
+                % Remove un-Binned Trace Indicies
+                traceIx{jj,ii} = traceIx{jj,ii}(:,1:gatherLength - xTrc);
+                
+                % Reduce Data Volume
+                if isReduceData
+                    Radar{jj,ii} = Radar{jj,ii}(:,1:rmNtrc:end);
+                    traceIx{jj,ii} = traceIx{jj,ii}(1:rmNtrc:end);
+                end
                 
                 % Create Temporary Two-Way Time
                 tmpTime = [0:dt:(size(Radar{jj,ii},1)-(1+padding))*dt];
@@ -303,9 +321,13 @@
                 Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt );               
 
         end
+        if isReduceData
+            tmpIx = sort(cat(2,traceIx{:,ii}));
+            trhd{ii} = trhd{ii}(:,tmpIx);
+        end
         
         fprintf('Signal Processing Done \n')
         toc
         display(' ')
     end
-    clear('Rad')
+    clear('Rad','tmpIx')
