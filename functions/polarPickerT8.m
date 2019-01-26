@@ -12,10 +12,11 @@ function [pickX,pickT] = polarPickerT8( Radar, snap, nHorizon, isZoom )
 % unspecified the user will be propmted via the GUI to supply snap 
 % information. polarPicker.m incorporates a GUI which allows the 
 % geophysicsist to 'Re-Seed' the pick if the active conditioning goes awry.
-% Access this feature by pressing any key or by selecting the Re-Seed 
-% button during the picking operation. The user is promted to accpet these
+% Access this feature by pressing space bar or by selecting the Re-Seed 
+% button during the picking operation. The manual picking feature is 
+% acessed by the 'm' key or its pushbutton. The user is asked to accept the
 % picks if correct. All picks may cleared for the horizon or, if declined,
-% the cross-hairs allow for additional pick seeds.
+% the cross-hairs allow for additional pick seeds or manual selections.
 %
 %   The idea for this picking routine is founded upon the mountain range
 %   hiker metaphor by Alex Miller. A hiker will follow the path requiring
@@ -77,6 +78,10 @@ pickTP = cell(nChan,nHorizon,nFiles);
 global isPicking
 isPicking = 1;
 
+% Create Manual Pick Callback
+global isManualPick
+isManualPick = 0;
+
 % Refresh Horizon Workspace
 isClear = 1;
 
@@ -90,12 +95,16 @@ for ii = 1:nFiles
         h = figure('Name',figstr,'NumberTitle','off');
 %         set(h,'units','normalized','outerposition',[.25 .25 .5 .5 ])
 %         set(h,'units','normalized','outerposition',[.25 .25 .25 1 ])
-%         set(h,'units','normalized','outerposition',[0 0 1 1 ])
-        set(h,'units','normalized','outerposition',[.25 .25 .5 1 ])
-        btn = uicontrol('Style', 'pushbutton', 'String', 'Re-Seed',...
-           'FontWeight','bold','FontSize',12,'Position', [125 10 100 50],...
+        set(h,'units','normalized','outerposition',[0 0 1 1 ])
+%         set(h,'units','normalized','innerposition',[0.05 0.05 1 1 ])
+%         set(h,'units','normalized','outerposition',[.25 .25 .5 1 ])
+        btn1 = uicontrol('Style', 'pushbutton', 'String', 'Re-Seed',...
+           'FontWeight','bold','FontSize',12,'Position', [15 75 100 50],...
             'Callback',{@reSeed});
-        set(h,'WindowKeyPressFcn',@reSeed);
+        btn2 = uicontrol('Style', 'pushbutton', 'String', 'Manual Pick',...
+           'FontWeight','bold','FontSize',12,'Position', [15 150 115 50],...
+            'Callback',{@manualPick});
+        set(h,'WindowKeyPressFcn',@keyPressCallback);
         imagesc(Radar{jj,ii});colormap(cmap);hold on;
         
         while kk <= nHorizon
@@ -128,7 +137,10 @@ for ii = 1:nFiles
                     zoom off;
                 end
                 
-                [x,t] = ginput(1); % Plant the Seed
+                [x,t,key] = ginput(1); % Plant the Seed
+                if key == 109 % 'm' == 109; Press m to enter manual picking
+                    isManualPick = 1;
+                end
                 x = floor(x); t = floor(t); % Round Index to Integer Value
                 if x == 0;
                     x = 1;  % Check Array Index
@@ -142,7 +154,10 @@ for ii = 1:nFiles
                 while x < 1 || x > size(Radar{jj,ii},2) || t < 1 || ...
                         t > size(Radar{jj,ii},1) || (size(Radar{jj,ii},2))-x <= look-fore
                     display('Pick Index Out of Range: Re-Pick the Seed')
-                    [x,t] = ginput(1); % Plant the Seed
+                    [x,t,key] = ginput(1); % Plant the Seed
+                    if key == 109 % 'm' == 109; Press m to enter manual picking
+                        isManualPick = 1;
+                    end
                     x = floor(x); t = floor(t); % Round Index to Integer Value
                     if x == 0;
                         x = 1;  % Check Array Index
@@ -186,6 +201,83 @@ for ii = 1:nFiles
                 O(1:look,:) = 180-O(1:look,:);
             end
         while x<size(Radar{jj,ii},2)-look
+            % Check CallBack Command for Manual Pick
+            if isManualPick
+                manX = [];
+                manT = [];
+                % Pause for Zoom or Pan etc. 
+                pause
+                while isManualPick
+                [x,t,key] = ginput(1); % Manual Pick
+                if key == 109 % 'm' == 109; Press m to exit manual picking
+                    isManualPick = 0;
+                end
+                x = floor(x); t = floor(t); % Round Index to Integer Value
+                if x == 0;
+                    x = 1;  % Check Array Index
+                end
+                
+                % Prevent Bad Seed Pick and Subsequent Errors
+                while x < 1 || x > size(Radar{jj,ii},2) || t < 1 || ...
+                        t > size(Radar{jj,ii},1) || (size(Radar{jj,ii},2))-x <= look-fore
+                    display('Pick Index Out of Range: Re-Pick the Seed')
+                    display(' ')
+                    [x,t,key] = ginput(1); % Manual Pick
+                    if key == 109 % 'm' == 109; Press m to exit manual picking
+                        isManualPick = 0;
+                    end
+                    x = floor(x); t = floor(t); % Round Index to Integer Value
+                    if x == 0
+                        x = 1;  % Check Array Index
+                    end
+                end
+                % Store Manual Picks
+                 manX = [manX;x]; manT = [manT;t];   
+                % Plot ReSeed Pick on Current Figure
+                if strcmp(snap,'peak')
+                    figure(gcf);plot(x,t,'.','color',peakColor);
+                end
+                if strcmp(snap,'trough')
+                    figure(gcf);plot(x,t,'.','color',troughColor);
+                end
+                if strcmp(snap,'zero')
+                    tp = t;
+                    tt = t;
+                    figure(gcf);plot(x,tt,'.','color',troughColor);
+                    figure(gcf);plot(x,tp,'.','color',peakColor);
+                end
+                end
+                % Determine Indicies
+                [sortManX, sortIx] = sort(manX);
+                % Append to Prior Picks
+                lIx = find(pickX{jj,kk,ii} < min(manX),1,'last');
+                hIx = find(pickX{jj,kk,ii} > max(manX),1);
+                if isempty(hIx) & isempty(lIx)
+                    pickX{jj,kk,ii}(1:length(manX)) = sortManX;
+                    pickT{jj,kk,ii}(1:length(manX)) = manT(sortIx);
+                    if strcmp(snap,'zero')
+                        pickTP{jj,kk,ii}(1:length(manX)) = manT(sortIx);
+                        pickTT{jj,kk,ii}(1:length(manX)) = manT(sortIx);
+                    end
+                elseif isempty(hIx)
+                    pickX{jj,kk,ii}(lIx+1:lIx+length(manX)) = sortManX;
+                    pickT{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
+                    if strcmp(snap,'zero')
+                        pickTP{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
+                        pickTT{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
+                    end
+                elseif isempty(lIx)
+                    pickX{jj,kk,ii}(1:length(manX)) = sortManX;
+                    pickT{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
+                    if strcmp(snap,'zero')
+                        pickTP{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
+                        pickTT{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
+                    end
+                end
+                % Reset Pace Counter
+                [~,pace] = min(abs(pickX{jj,kk,ii}-x));
+                isPicking = 0;
+            end
             % Check CallBack Command for RePick
             if ~isPicking
                 [x,t] = ginput(1); % Plant the Seed
@@ -209,8 +301,8 @@ for ii = 1:nFiles
                 % Replace Pick Index with RePickIx
                 tmp = pace; % Bookmark Old Index
                 [~, pace] = min(abs(pickX{jj,kk,ii}-x));
-                pickT{jj,kk,ii}(pace) = t;
-                pickX{jj,kk,ii}(pace) = x;
+                pickT{jj,kk,ii}(pace) = t;%pickT{jj,kk,ii}(pace+1:end) = [];
+                pickX{jj,kk,ii}(pace) = x;%pickX{jj,kk,ii}(pace+1:end) = [];
                 % Clear Bad Picks from Figure
                 items = get(gca,'Children');
                 nBadPicks = tmp - pace + 1;
@@ -223,9 +315,15 @@ for ii = 1:nFiles
                     nBadPicks = 2.*nBadPicks;
                 end
                 % Delete Graphics
-                delete(items(1:nBadPicks))
-                % Clear Graphics Memory
-                items(1:nBadPicks) = [];
+                try
+                    delete(items(1:nBadPicks))
+                    % Clear Graphics Memory
+                    items(1:nBadPicks) = [];
+                catch
+                    delete(items(1:length(items)-1))
+                    % Clear Graphics Memory
+                    items((1:length(items)-1)) = [];
+                end
                 
                 % Plot ReSeed Pick on Current Figure
                 if strcmp(snap,'peak')
@@ -237,8 +335,8 @@ for ii = 1:nFiles
                 if strcmp(snap,'zero')
                     tp = t;
                     tt = t;
-                    pickTP{jj,kk,ii}(pace) = tp;
-                    pickTT{jj,kk,ii}(pace) = tt;
+                    pickTP{jj,kk,ii}(pace) = tp;pickTP{jj,kk,ii}(pace+1:end) = [];
+                    pickTT{jj,kk,ii}(pace) = tt;pickTT{jj,kk,ii}(pace+1:end) = [];
                     figure(gcf);plot(x,tt,'.','color',troughColor);
                     figure(gcf);plot(x,tp,'.','color',peakColor);
                 end
@@ -343,7 +441,7 @@ for ii = 1:nFiles
             % work opposing gravity will be the greatest for the hiker.
             % A trough in the RadarGram represents the minimum value
             % in the polar space cost function. The Zero contour is taken
-            % to be the average of the maximum and minimum cost diections.
+            % to be the average of the maximum and minimum cost directions.
                                   
             if strcmp(snap,'peak')
                 % Bin Theta Vaules
@@ -366,7 +464,7 @@ for ii = 1:nFiles
                 pickX{jj,kk,ii}(pace) = x;
                 pickT{jj,kk,ii}(pace) = t;
                 % Plot Current Pick
-                pause on; pause(0.005);
+                pause on; pause(0.1);
                 figure(gcf);plot(x,t,'.','color',peakColor)
                 
             elseif strcmp(snap,'trough')
@@ -390,7 +488,7 @@ for ii = 1:nFiles
                 pickX{jj,kk,ii}(pace) = x;
                 pickT{jj,kk,ii}(pace) = t;
                 % Plot Current Pick
-                pause on; pause(0.005);
+                pause on; pause(0.1);
                 figure(gcf);plot(x,t,'.','color',troughColor)
                 clear ('Map')
                 
@@ -431,7 +529,7 @@ for ii = 1:nFiles
                 pickTP{jj,kk,ii}(pace) = tp;
                 pickTT{jj,kk,ii}(pace) = tt;
                 % Plot Current Picks
-                pause on; pause(0.005);
+                pause on; pause(0.1);
                 figure(gcf);plot(x,tp,'.','color',peakColor);
                 plot(x,tt,'.','color',troughColor)
                     clear ('MapT','MapP')
@@ -459,9 +557,9 @@ for ii = 1:nFiles
                     length(pickTP{jj,kk,ii});
             end
             % Delete Graphics
-            delete(Save(1:nSavePicks))
+            delete(Save(1:numel(Save)-1))
             % Clear Graphics Memory
-            Save(1:nSavePicks) = [];
+            Save(1:numel(Save)-1) = [];
             
             % Smoothly Interpolate Picks Across all Traces
             pickT{jj,kk,ii} = round(nonParametricSmooth...
@@ -488,6 +586,8 @@ for ii = 1:nFiles
             
             % Test Horizon Count for Iteration
             if kk == nHorizon
+                % Review the Interpolated Horizon
+                pause('on');pause(5);
                 % Close Picker Figure
                 close(figure(h.Number))
                 % Advance RadarGram
@@ -522,9 +622,9 @@ for ii = 1:nFiles
                 end
                 
                 % Delete Graphics
-                delete(Reject(1:nRejectPicks))
+                delete(Reject(1:numel(Reject)-1))
                 % Clear Graphics Memory
-                Reject(1:nRejectPicks) = [];
+                Reject(1:numel(Reject)-1) = [];
                 % Clear Bad Picks
                 pickTP{jj,kk,ii} = [];
                 pickTT{jj,kk,ii} = [];
@@ -542,8 +642,19 @@ for ii = 1:nFiles
                 isClear = 0;
                 % Ensure Not isPicking
                 isPicking = 0;
-                % Make True x Position 
+                % Make True x Position
                 x=size(Radar{jj,ii},2)-(look+1);
+                % Construct a questdlg to Suggest Manual Picking Mode
+                prompt = ['*',blanks(17),'Enter Manual Picking?',blanks(17),'*'];
+                titleTxt = ['File: ' num2str(ii,'%02d'),' Channel: ',...
+                    num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')];
+                questManualPick = questdlg(prompt, titleTxt,'Yes','No','Yes');
+                display(['RePick File: ' num2str(ii,'%02d'),' Channel: ',...
+                    num2str(jj,'%02d'),' Horizon: ',num2str(kk,'%02d')])
+                display(' ')
+                if strcmp(questManualPick,'Yes')
+                    isManualPick = 1;
+                end
             end
             
         end
@@ -555,5 +666,36 @@ end
 %% CallBack Function for polarPicker.m
 function reSeed(src,evnt)
 global isPicking
+global isManualPick
     isPicking = 0;
+    if isManualPick
+        % Break Manual Pick with Re-Seed PushButton
+        isManualPick = 0;
+    end
+end
+
+function manualPick(src,event)
+global isManualPick
+% Toggle
+if ~isManualPick
+    isManualPick = 1;
+    display('Manual Picking On')
+    display('Press M key or Push Button to Exit')
+else
+    isManualPick = 0;
+    display('Manual Picking Off')
+    display('Press M key or Push Button to Enter')
+end
+    
+end
+
+function keyPressCallback(src,event)
+keyPressed = event.Key;
+if strcmpi(keyPressed,'space') % Use the Space Bar to Invoke Seeded Picking
+    reSeed;
+elseif strcmpi(keyPressed,'m') % Use the M Key to Toggle Manual Picking
+    manualPick;
+else
+    return
+end
 end
