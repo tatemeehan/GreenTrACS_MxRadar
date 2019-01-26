@@ -19,7 +19,20 @@
     display(' ')
     display('Initial Horizon must be the Air Wave!')
     display(' ')
+    tmpDirectFBpick = DirectFBpick;
     [~, DirectFBpick] = polarPickerT8(directRadar);
+    
+    % Scrap Code for Concatenating Airwave and surfacewave picks
+%     for ii = 1:2
+%     for jj = 1:nChan
+%         if ii == 1
+%         tmp{jj,ii} = tmpDirectFBpick{jj,ii};
+%         else
+%             tmp{jj,ii} = DirectFBpick{jj,1};
+%         end
+%     end
+%     end
+%     DirectFBpick = tmp;
     
     reflectRadar = Radar;
     

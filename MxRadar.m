@@ -82,10 +82,10 @@ addpath './supplementalData';
 isParallel = 1;
 
 % Read Data
-isReadSensorsSoftware = 1;     % Read Multiplexed Data
+isReadNC = 1;                  % Read Multiplexed Data
 isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 isPolarPicker = 0;             % Pick Travel-Time Horizons
-isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
+isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 1;                 % Load GPS for MxRadar
 
@@ -93,6 +93,7 @@ isLoadGPS = 1;                 % Load GPS for MxRadar
 isWriteTimeHorizons = 0;
 
 % Process Data
+isReduceData = 1;       % Remove Every n Traces from Data Gather
 isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
 isKill = 1;             % Kill Unanted Channels
 isMedianSubtraction = 1;% Background Median Subtraction Filter
@@ -123,7 +124,7 @@ load(['SplitJet.mat']);
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [0,1,2];%,4,7];               % Array of data "LINE" numbers
+lineNo = [0,1,2,4,7];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
@@ -149,7 +150,7 @@ if isLoadGPS
     load('MxRadarGPSCore15SpurW061317.mat')
 end
 %% Read GPR Data
-if isReadSensorsSoftware
+if isReadNC
 
     ReadPreProcessRoutine
     
@@ -196,7 +197,9 @@ directRadar = Radar;
 
     if isLoadTimeHorizons
 
-        TimeHorizonFilename = '6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat';
+%         TimeHorizonFilename = '6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat';
+        TimeHorizonFilename = 'Core15SpurWCompleteTimeHorizon.mat';
+
         load(TimeHorizonFilename);
         
         % Determine Number of Direct Wave Horizons
@@ -407,15 +410,16 @@ if isDepthSection
 %         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
         colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[Ages{ii}]);
         for kk = 1:size(DepthAge{ii},2)
-        plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
+        plot(linspace(Traverse{ii}(1),Traverse{ii}(end),length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
         end
         set(get(hlay,'ylabel'),'String','Age [a]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         title('Isochrone Tomogram')
         xlabel('Distance [km]')
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')        
-        
+        set(gca,'fontsize',14,'fontweight','bold')            
+        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
+        set(gca,'fontsize',14,'fontweight','bold') 
     end
     %% Image Depth Section
     for ii = 1:nFiles
@@ -465,7 +469,8 @@ end
     % Save Travel Time Picks
     if isWriteTimeHorizons
 %         save('6-2-16-Core7-Spur-W-TimeHorizon.mat','DirectFBpick','ReflectionFBpick','-v7.3');
-save('6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat','DirectFBpick','exportDirectTravelTimes',...
+%'6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat'
+save('Core15SpurWCompleteTimeHorizon.mat','DirectFBpick','exportDirectTravelTimes',...
     'ReflectionFBpick','exportReflectionTravelTimes','-v7.3');
     end
     
