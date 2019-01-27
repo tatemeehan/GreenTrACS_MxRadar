@@ -77,14 +77,16 @@ addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
 addpath './functions';
 addpath './supplementalData';
+workDir = pwd;
+
 %% Control Floe
 % Parallel Computing Enabled
 isParallel = 1;
 
 % Read Data
 isReadNC = 1;                  % Read Multiplexed Data
-isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
-isPolarPicker = 0;             % Pick Travel-Time Horizons
+isLoadTimeHorizons = 0;        % Load Previously Picked Time Horizons
+isPolarPicker = 1;             % Pick Travel-Time Horizons
 isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 1;                 % Load GPS for MxRadar
@@ -423,9 +425,9 @@ if isDepthSection
     end
     %% Image Depth Section
     for ii = 1:nFiles
-%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-        figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
-        colormap(Smoke);%hold on;
+        figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
+%         figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
+        colormap(cmapAdapt(RadarDepth{ii},Smoke));%hold on;
 %         for kk = 1:size(DepthAge{ii},2)
 %         plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
 %         end
@@ -470,8 +472,11 @@ end
     if isWriteTimeHorizons
 %         save('6-2-16-Core7-Spur-W-TimeHorizon.mat','DirectFBpick','ReflectionFBpick','-v7.3');
 %'6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat'
+cd '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save/matData'
 save('Core15SpurWCompleteTimeHorizon.mat','DirectFBpick','exportDirectTravelTimes',...
     'ReflectionFBpick','exportReflectionTravelTimes','-v7.3');
+cd(workDir)
+
     end
     
     % Save Modeled Output
