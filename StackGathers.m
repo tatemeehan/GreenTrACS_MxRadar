@@ -13,7 +13,11 @@
         stackTaper(taperWin,1) = tukeywin(size(RadarNMO{ix4,ii}(taperWin,:),1),0.05);
         stackTaper = stackTaper*ones(1,size(RadarNMO{ix4,ii},2));
         % Stack Offsets
-        RadarStack{ii} = (RadarNMO{ix4,ii}.*stackTaper)+RadarNMO{ix12,ii}...
-            +RadarNMO{ix9,ii} + RadarNMO{ix10,ii};
+        RadarStack{ii} = (RadarNMO{ix4,ii}.*stackTaper)+RadarNMO{ix12,ii};%...
+           % +RadarNMO{ix9,ii};%= + RadarNMO{ix10,ii};
+        
+        % Trace Normalize
+        RadarStack{ii} = trcNormalize(RadarStack{ii});
+
         clear stackTaper
     end
