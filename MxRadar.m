@@ -234,9 +234,29 @@ if isSWEDISH
     fprintf('Begin Horizon Velocity Analysis \n')
     display(' ')
     tic
+
+    % Bias Calibration at Core 15W Pit (Observed - Estimated);
+    % This is a 1.72% Adjustment
+    velocityBias = 0.004;      % [m/ns]
+    densityBias = -.0258902;   % [g/cm3]
+    
+    isGreenTracsFirnCore = 1;
+    if isGreenTracsFirnCore
+        isCoreDepthAge = 1; % Use Age Depth Profile from Local Core Site
+        coreNo = [15]; % Array of Firn Cores 1-16 to include in analysis
+        depthAgeFilename = 'Core15_age_scale.txt';
+        
+        % Annual Accumulation Correction from Firn Core Chemistry [mwe]
+        GreenTracsFirnCore
+    else
+        % Assume average is 0.3 [mwe]
+        coreAccumulation = 0.3;
+        % Average over 1.5 years Winter 2016 - Summer 2017
+        ageInterval = 1.5;            
+    end
     
     % Toggle Inversion Scheme
-    % Air-Coupled Wave Soltion
+    % Air-Coupled Wave Solution
     isL1Air = 0;
     isL2Air = 1;
     % Surface-Coupled Wave
@@ -246,15 +266,10 @@ if isSWEDISH
     isL1NMO = 0;
     isL2NMO = 1;
     
-    % Run Memory Allocation
+    % Memory Allocation
     HVAmemoryAllocation
     
-    % Bias Calibration at Core 15W Pit (Observed - Estimated);
-    % This is a 1.72% Adjustment
-    velocityBias = 0.004;      % [m/ns]
-    densityBias = -.0258902;    % [g/cm3]
-    depthBias = 0.7647;          % [m] 2016 Horizon
-    
+    % Run Horizon Velocity Analysis
     HorizonVelocityAnalysis
 
 end   
@@ -315,7 +330,8 @@ if isDepthSection && ~isLoadMxHL
     toc
     display(' ')
     %% Post-Stack FX-Deconvolution
-    if isFXdecon
+    isPostStackFXdecon = 0;
+    if isPostStackFXdecon
         fprintf('Begin Post-Stack FX-Predictive Deconvolution \n')
         tic
         
@@ -336,6 +352,42 @@ if isDepthSection && ~isLoadMxHL
     MxHLmodel
 
     fprintf('MxHL Model Interpolation Done \n')
+    toc
+    display(' ')
+    %% Radar Depth to Deposition Time Image
+    fprintf('Begin Depth-Deposition Conversion \n')
+    tic
+    
+    DepthToDepositionConversion
+
+    fprintf('Depth-Deposition Image Done \n')
+    toc
+    display(' ')
+    
+        %% Deposition Image FX-Deconvolution
+    isDepositionFXdecon = 1;
+    if isDepositionFXdecon
+        fprintf('Begin Deposition Image FX-Predictive Deconvolution \n')
+        tic
+        
+        % Select Temporal or Spatial Deconvolution Gates: 1 on; 0 off;
+        isTemporalFXdecon = 1;
+        isSpatialFXdecon = 0;
+        
+        DepositionFXdeconTX
+        
+        fprintf('Deposition Image FX-Deconvolution Done \n')
+        toc
+        display(' ')
+    end
+    
+    %% Radar Deposition Time to Depth Image
+    fprintf('Begin Deposition-Depth Conversion \n')
+    tic
+    
+    DepositionToDepthInversion
+
+    fprintf('Deposition-Depth Image Done \n')
     toc
     display(' ')
     end
@@ -425,8 +477,8 @@ if isDepthSection
     end
     %% Image Depth Section
     for ii = 1:nFiles
-        figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-%         figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
+%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
+        figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
         colormap(cmapAdapt(RadarDepth{ii},Smoke));%hold on;
 %         for kk = 1:size(DepthAge{ii},2)
 %         plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
@@ -435,6 +487,14 @@ if isDepthSection
         xlabel('Distance [km]')
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
+        
+        % Plot RadarGram with Isochrones
+%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
+        figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
+        colormap(cmapAdapt(RadarDepth{ii},Smoke));hold on;
+        for kk = 1:size(DepthAge{ii},2)
+        plot(linspace(Traverse{ii}(1),Traverse{ii}(end),length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
+        end
     end
 end
 %% Save HVA Output

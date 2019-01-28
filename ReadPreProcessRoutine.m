@@ -48,6 +48,8 @@
             GPSixEdges = GeoLocation.GPSixEdges(:,ii);
             GPSix = GPSixEdges(1):GPSixEdges(2);
             Year{ii} = GeoLocation.Date{GPSix(1)}(1:4);
+            tmpDate = datetime(GeoLocation.Date{GPSix(1)},'InputFormat','yyyy/MM/dd');
+            dayofyear = day(tmpDate,'dayofyear');
             GPS = [GeoLocation.X(GPSix),GeoLocation.Y(GPSix),...
                 GeoLocation.Z_EGM08(GPSix)];
             dX = GeoLocation.dX(GPSix);

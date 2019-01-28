@@ -377,15 +377,13 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
         IntervalVelocity{rh,ii} = [VoInt{rh,:,ii}];
         IntervalVelocityVar{rh,ii} = [VoIntVar{rh,:,ii}];
         % Concatenate Reflector Depth
-        % Apply Bias Correction
-        ReflectionDepth{rh,ii} = [HorizonDepth{rh,:,ii}].*(depthBias);
+        ReflectionDepth{rh,ii} = [HorizonDepth{rh,:,ii}];
         ReflectionDepthVar{rh,ii} = [HorizonDepthVar{rh,:,ii}];
         %Concatenate Layer Thicnkess
         IntervalThickness{rh,ii} = [HoInt{rh,:,ii}];
         IntervalThicknessVar{rh,ii} = [HoIntVar{rh,:,ii}];
         % Concatenate Reflection Density
-        % % Apply Core 15 Spur W Bias Correction
-        ReflectionDensity{rh,ii} = [RhoRef{rh,:,ii}];%+densityBias;
+        ReflectionDensity{rh,ii} = [RhoRef{rh,:,ii}];
         ReflectionDensityVar{rh,ii} = [RhoRefVar{rh,:,ii}];
         % Concatenate Interval Density
         IntervalDensity{rh,ii} = [RhoInt{rh,:,ii}];
@@ -395,9 +393,16 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
         CovarianceThicknessDensity{rh,ii} = [CovThicknessRho{rh,:,ii}];
         
         % Estimte SWE
-        % Average over 1.5 years Winter 2016 - Summer 2017
-        SWE{rh,ii} = ReflectionDepth{rh,ii}.*ReflectionDensity{rh,ii}./1.5;
-        SWEint{rh,ii} = IntervalThickness{rh,ii}.*IntervalDensity{rh,ii}./1.5;
+        % Initiate CallBack to GreenTracsFirnCore
+        if isGreenTracsFirnCore
+            isCallbackHVA = 1;
+            % Assumes Firn Stratigraphy to be Isochronous
+            % Report the Age of the Reflection Horizon 
+            GreenTracsFirnCore
+        end
+        % Estimate Annual Accumulation of ageInterval Annuals
+        SWE{rh,ii} = ReflectionDepth{rh,ii}.*ReflectionDensity{rh,ii}./ageInterval;
+        SWEint{rh,ii} = IntervalThickness{rh,ii}.*IntervalDensity{rh,ii}./ageInterval;
         % Error Propagation Equation
         SWEvar{rh,ii} = ReflectionDepthVar{rh,ii}.*ReflectionDensity{rh,ii}.^2 ...
             + ReflectionDensityVar{rh,ii}.*ReflectionDepth{rh,ii}.^2 ...
