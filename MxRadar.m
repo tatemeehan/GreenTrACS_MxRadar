@@ -85,8 +85,8 @@ isParallel = 1;
 
 % Read Data
 isReadNC = 1;                  % Read Multiplexed Data
-isLoadTimeHorizons = 0;        % Load Previously Picked Time Horizons
-isPolarPicker = 1;             % Pick Travel-Time Horizons
+isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
+isPolarPicker = 0;             % Pick Travel-Time Horizons
 isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 1;                 % Load GPS for MxRadar
@@ -404,6 +404,15 @@ if isLoadMxHL
     clear GTC15SpurWMxHL
 end
 if isDepthSection
+    % Load ColorBrewer 
+    set(0,'DefaultAxesFontName','FreeSerif')
+    [colorbrew , ~, ~] = brewermap(256,'RdYlBu');
+    colorbrew=flipud(colorbrew);
+    colorQ = colorbrew(round(quantile(1:256,[0.85,0.5,0.15])),:);
+    c1 = colorQ(1,:);
+    c2 = colorQ(2,:);
+    c3 = colorQ(3,:);
+
     for ii = 1:nFiles
         %Create Transparancy Mask
         WiggleAlpha = sign(RadarDepth{ii}); WiggleAlpha(WiggleAlpha<0) = 0;
@@ -411,7 +420,7 @@ if isDepthSection
         WiggleAlpha = WiggleAlpha.*(tukeywin(size(WiggleAlpha,1),.09).*ones(1,size(WiggleAlpha,2)));
         WiggleAlpha(WiggleAlpha<1) = 0;
         % Plot Density, Overlay Peak Amplitudes
-        figure();imagesc(Traverse{ii},DepthAxis{ii},1000.*DensityModel{ii});colormap(yet_white);freezeColors;hold on;
+        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityModel{ii});colormap(yet_white);freezeColors;hold on;
         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
         colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[310,350,400,450,500,550,600,625]);
         set(get(hlay,'ylabel'),'String','Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
@@ -422,12 +431,17 @@ if isDepthSection
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         
         % Plot Density Anamoly, Overlay Peak Amplitudes
-        figure();imagesc(Traverse{ii},DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(SplitJet);caxis([-15,15]);freezeColors;hold on;
-%         plot(Traverse{ii},depth550,'--k','linewidth',3);
-        imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
+%         figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
+% %         plot(Traverse{ii},depth550,'--k','linewidth',3);
+%         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
+% %         colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
+%         colormap(colorbrew);hlay = colorbar;
+        figure();
+        imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
+        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
+        colormap(colorbrew);hlay = colorbar;
         set(get(hlay,'ylabel'),'String','Deviation from Mean Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        title('Density Anomaly Tomogram')
+        title('Density Anomaly')
         xlabel('Distance [km]')
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
@@ -439,7 +453,7 @@ if isDepthSection
 %         plot(Traverse{ii},1000.*MeanDensityDeviation{ii},'k','linewidth',3)
 %         title('Mean Average Deviation - Density [kg/m^{3}]')
         % Plot Surface Density Deviation
-        plot(Traverse{ii},1000.*SurfaceDensityDeviation{ii},'k','linewidth',3)
+        plot(Traverse{ii}./1000,1000.*SurfaceDensityDeviation{ii},'k','linewidth',3)
         title('Surface Density - Deviation from Mean [kg/m^{3}]')
         grid on
         set(gca,'fontsize',14,'fontweight','bold')
@@ -449,26 +463,27 @@ if isDepthSection
         
         hDA2 = subplot(2,1,2);
         % Plot Density Anamoly, Overlay Peak Amplitudes
-        imagesc(Traverse{ii},DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(SplitJet);caxis([-15,15]);freezeColors;hold on;
-        imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
+        imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
+        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
+        colormap(colorbrew);hlay = colorbar;
+%         colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
         set(get(hlay,'ylabel'),'String','Deviation from Mean Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        title('Density Anomaly Tomogram')
+        title('Density Anomaly')
         xlabel('Distance [km]')
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         
         % Plot Depth-Age Tomography
-        figure();imagesc(Traverse{ii},DepthAxis{ii},AgeModel{ii});colormap(yet_white);freezeColors;hold on;
+        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AgeModel{ii});colormap(yet_white);freezeColors;hold on;
 %         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
         colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[Ages{ii}]);
         for kk = 1:size(DepthAge{ii},2)
-        plot(linspace(Traverse{ii}(1),Traverse{ii}(end),length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
+        plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
         end
         set(get(hlay,'ylabel'),'String','Age [a]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
-        title('Isochrone Tomogram')
+        title('Isochronogram')
         xlabel('Distance [km]')
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')            
@@ -478,8 +493,11 @@ if isDepthSection
     %% Image Depth Section
     for ii = 1:nFiles
 %         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-        figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
-        colormap(cmapAdapt(RadarDepth{ii},Smoke));%hold on;
+        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(5),2));
+        colormap(cmapAdapt(RadarDepth{ii},colorbrew));hold on;
+        for kk = 1:size(DepthAge{ii},2)
+            plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'color',c3,'linewidth',2)
+        end
 %         for kk = 1:size(DepthAge{ii},2)
 %         plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
 %         end
@@ -488,14 +506,39 @@ if isDepthSection
         ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         
+
+        
         % Plot RadarGram with Isochrones
 %         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-        figure();imagesc(Traverse{ii},DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
-        colormap(cmapAdapt(RadarDepth{ii},Smoke));hold on;
+        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
+        colormap(cmapAdapt(RadarDepth{ii},colorbrew));hold on;
         for kk = 1:size(DepthAge{ii},2)
-        plot(linspace(Traverse{ii}(1),Traverse{ii}(end),length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
+        plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'color',c3,'linewidth',2)
         end
+        
+        % Compare Time to Depth Images
+        compareIx = 7550:11500;
+        compareIy = 150:550;
+        % Salt and Pepper Time Image
+        figure();imagesc(Traverse{ii}(compareIx)./1000,tStack{ii}(compareIy,1),AGCgain(Radar{4}(compareIy,compareIx),size(Radar{ii}(compareIy,compareIx),1)./round(3.5),2));
+        colormap(cmapAdapt(Radar{4}(compareIy,compareIx),colorbrew));hold on;
+        title('Core 15 Spur West - Time Section')
+        xlabel('Distance [km]')
+        ylabel('Travel-Time [ns]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        set(gca,'fontsize',14,'fontweight','bold')
+        axis square
+                
+        % Bread and Butter Depth Image
+        figure();imagesc(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AGCgain(RadarDepth{ii}(compareIy,compareIx),size(RadarDepth{ii}(compareIy,compareIx),1)./round(3.5),2));
+        colormap(cmapAdapt(RadarDepth{ii}(compareIy,compareIx),colorbrew));hold on;
+        title('Core 15 Spur West - Depth Section')
+        xlabel('Distance [km]')
+        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        set(gca,'fontsize',14,'fontweight','bold')
+        axis square
+        
     end
+    
 end
 %% Save HVA Output
 isSaveHVA = 0;
@@ -598,38 +641,39 @@ if isSWEDISH
         figure();
         subplot(3,1,1)
         for rh = 1:nReflectionHorizon
-            shadedErrorBarT8([],SnowWaterEqv{rh,ii},...
-                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0.5,0,0],'linewidth',1.5});
+            shadedErrorBarT8(Traverse{ii}./1000,SnowWaterEqv{rh,ii},...
+                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',c1,'linewidth',1.5});
             hold on;
         end
         freezeColors
         axis tight
         axis ij
         grid on
-        title('Accumulation [m w.e.]')
+        title('Average Annual Accumulation [m w.e. a^{-1}]')
         subplot(3,1,2)
         for rh = 1:nReflectionHorizon
-            shadedErrorBarT8([],Density{rh,ii}.*1000,...
-                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,.5],'linewidth',1.5});
+            shadedErrorBarT8(Traverse{ii}./1000,Density{rh,ii}.*1000,...
+                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
             hold on;
         end
         freezeColors
         axis tight
         axis ij
         grid on
-        title('Average Density [kg/m^{3}]')
+        title('Average Snow Density [kg/m^{3}]')
         subplot(3,1,3)
         for rh = 1:nReflectionHorizon
-            shadedErrorBarT8([],Depth{rh,ii},...
-                sqrt(DepthVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+            shadedErrorBarT8(Traverse{ii}./1000,Depth{rh,ii},...
+                sqrt(DepthVar{rh,ii}),1,{'Color',c3,'linewidth',1.5});
             hold on;
         end
         freezeColors
         axis tight
         axis ij
         grid on
-        title('Depth [m]')
-        set(findobj(gcf,'type','axes'),'FontName','Arial','FontSize',12,...
+        title('Snow Depth [m]')
+        xlabel('Distance [km]')
+        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
             'FontWeight','Bold', 'LineWidth', 1);
     end
 end
