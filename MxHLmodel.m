@@ -49,7 +49,7 @@
         % Calculate Accumulation Rate from Maximum Isochrone to Surface
         
         MaxAge = floor(min(AgeModel{ii}(end,:)));
-        Ages{ii} = [1,3:3:MaxAge];
+        Ages{ii} = [1:5:MaxAge];
         Isochrones = abs(str2num(Year{ii}) - Ages{ii});
         for kk = 1:length(Isochrones)
         [~, AgeIx] = min(abs(AgeModel{ii}-Ages{ii}(kk)));

@@ -25,41 +25,12 @@
     StackDepth = cell(nFiles,1);
     XY = cell(nFiles,1);
     
-    % Annual Accumulation Correction from Core 15 Chemistry [mwe]
-    % 50 year mean is ~0.299 [mwe]
-    accumulationAvg = 0.299;
-    iceCoreLL = [73.592732,-47.197152];
-    iceCoreXY = ll2psn(iceCoreLL(1),iceCoreLL(2));
-    % Extract Radar Measurments Nearest to Ice Core.
-    if isLoadGPS
-        k = 100; % Number of Radar Estimates to Estimate Core Site Average
-    if isCat
-        iceCoreFileIx = 1;
-    [~,iceCoreIx] = mink(sqrt((iceCoreXY(1)-trhd{1}(10,1:nChan:end)).^2 ...
-    + (iceCoreXY(1)-trhd{1}(11,1:nChan:end)).^2),k);
-
-    else 
-        for ii = 1:nFiles
-            [iceCoreDistance(ii,1:k),iceCoreIx(ii,1:k)] = mink(sqrt((iceCoreXY(1)-trhd{ii}(10,1:nChan:end)).^2 ...
-    + (iceCoreXY(1)-trhd{ii}(11,1:nChan:end)).^2),k);
-        end
-        [~,iceCoreFileIx] = min(mean(iceCoreDistance,2));
-        iceCoreIx = iceCoreIx(iceCoreFileIx,:);
-    end
-    else
-        % If Radar is not Paired with GPS assume Ice Core is located 
-        % adjacent to the first k traces of the first radar file
-        iceCoreFileIx = 1;
-        iceCoreIx = 1:k;        
-    end
-    
     % Estimate of Mean Annual Temperature    
     isLoadT2 = 1;
 %     annualT = -18; % [C]     
 %     annualT = -19; % [C]    
 %     annualT = -20; % [C]
     annualT = -21.5; % [C]    
-
 
     % Array of Model Depths
     maxDepth = 30.001;
@@ -97,7 +68,7 @@
             % Extract Radar Forcing for Herron-Langway Model
             surfHL = ForcingDensity{ii}(jj);
             % radar estimates are tranfered to ice core accumulation 
-            accuHL = accumulationAvg + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
+            accuHL = coreAccumulation(1) + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
                 mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
             AverageAccumulation{ii}(jj) = accuHL;
             % Impose Herron-Langway (1980) Density Model
@@ -148,5 +119,19 @@
             StackingVelocity{ii}(:,jj) = DryCrimVRMS(StackingDensity{ii}(:,jj));
             StackingTime{ii}(:,jj) = 2.*StackZ./StackingVelocity{ii}(:,jj);
                       
+        end
+        % Apply Correction to Interannual Isochrone Depths
+        if isGreenTracsFirnCore
+            % Currently works for 1 Firn Core in Analysis
+            % Shift from Calendar Years to Ages
+            tmp1 = abs(GTCdepthAge(1,2)-GTCdepthAge(:,2)); 
+            % Extract Age-Depth Model Near Firn Core and Average
+            tmp2 = mean(HerronLangwayAge{ii}(:,iceCoreIx(ii,:)),2);
+            % Compute Residual (Observed - Estimated)
+            isochroneResidual(:,ii) = tmp1-tmp2;
+            % Update Model Positive is Downwars so Residual should be Added
+            HerronLangwayAge{ii} = HerronLangwayAge{ii} + isochroneResidual(:,ii);
+            % Remove any Numerical Bias
+            HerronLangwayAge{ii}(1,:) = zeros(1,size(HerronLangwayAge{ii}(1,:),2));
         end
     end

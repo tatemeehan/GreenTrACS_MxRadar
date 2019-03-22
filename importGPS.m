@@ -8,7 +8,7 @@
 
 %  Boise State University: Tate Meehan GreenTrACS 2017
 
-clear; close all; clc;
+% clear; close all; clc;
 addpath './functions'
 %% Load GPS.csv
 workingDir = pwd;
