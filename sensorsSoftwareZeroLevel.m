@@ -24,7 +24,7 @@ num = datenum(daymonthyear,'dd-mmm-yyyy');
 folders = folders(sortIx);
 
 % Loop Over each day of Acquisition
-for ff = 16:length(folders)%1:length(folders)
+for ff = 1:length(folders)
     dataDir = [directory,'/',folders(ff).name];
     % This IS Robust for 2016 w/GPS files
     % Get .DT1 Files
