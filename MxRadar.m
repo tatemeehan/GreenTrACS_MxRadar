@@ -543,7 +543,7 @@ end
 isSaveHVA = 0;
 if isSaveHVA
     % Save Rough Results
-    HVAfilename = 'Core15SpurWHVA_051519.mat';
+    HVAfilename = 'Core15SpurWHVA_051619.mat';
     save(HVAfilename,'AirTo','DirectTo','DirectToVar','deltaT',...
     'DirectVelocity','DirectVelocityVar','DirectDepth','DirectDepthVar',...
     'DirectDensity','DirectDensityVar','CovarianceDepthDensityDirect',...
@@ -556,7 +556,7 @@ if isSaveHVA
     'SWEvar','SWEintVar','-v7.3');
 
     % Save Smooth Results
-    HVAsmoothFilename = 'Core15SpurW_HVAsurfaceForcing_051519_2.mat';
+    HVAsmoothFilename = 'Core15SpurW_HVAsurfaceForcing_051619.mat';
     save(HVAsmoothFilename,'dhTWT','dhTWTvar','dhSnowWaterEqv',...
         'dhSnowWaterEqvVar','dhDensity','dhDensityVar','dhDepth',...
         'dhDepthVar','TWT','TWTvar','SnowWaterEqv',...
@@ -567,7 +567,7 @@ if isSaveHVA
         'ForcingDensityVar','ForcingDepth','ForcingDepthVar','AverageAccumulation','-v7.3');
     
     % Save Bootstrap Distributions (Feed into MMxHL Modeling)
-    BootstrapFilename = 'Core15SpurW_Bootstraps_051519.mat';
+    BootstrapFilename = 'Core15SpurW_Bootstraps_051619.mat';
     save(BootstrapFilename,'xToRef','xRhoDir','xRhoRef','xDepthDir','xDepth','-v7.3');
 end
     % Save Travel Time Picks
@@ -584,7 +584,7 @@ cd(workDir)
     % Save Modeled Output
     isSaveMxHL = 0;
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_051519.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_051619.mat';
         GTC15SpurWMxHL = struct('Traverse',{Traverse},'DepthAxis',{DepthAxis},...
             'RadarDepth',{RadarDepth},'AgeModel',{AgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
@@ -699,23 +699,28 @@ if isSWEDISH
         axis tight
         axis ij
         grid on
-        title('Accumulation [m w.e.]')
+        set(gca,'xticklabel',[])
+        set(gca,'ytick',[0.24,0.27,0.3,0.33])
+        title('Average Annual Accumulation (m w.e. a^{-1})')
         subplot(3,1,2)
         for dh = 2:nDirectHorizon
             shadedErrorBarT8(distance,dhDensity{dh,ii}.*1000,...
-                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
             hold on;
         end
         for rh = 1:nReflectionHorizon
             shadedErrorBarT8(distance,Density{rh,ii}.*1000,...
-                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
             hold on;
         end
         freezeColors
         axis ij
         axis tight
         grid on
-        title('Average Density [kg/m^{3}]')
+        set(gca,'xticklabel',[])
+        title('Average Density (kg/m^{3})')
         subplot(3,1,3)
 %         for dh = 2:nDirectHorizon
 %             shadedErrorBarT8(distance,dhDepth{dh,ii},...
@@ -723,16 +728,22 @@ if isSWEDISH
 %             hold on;
 %         end
         for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance,Depth{rh,ii},...
-                sqrt(DepthVar{rh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
+            shadedErrorBarT8(distance./1000,Depth{rh,ii},...
+                sqrt(DepthVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+
+%                 sqrt(DepthVar{rh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
+
             hold on;
         end
         freezeColors
         axis ij
         axis tight
         grid on
-        title('Depth [m]')
-        xlabel('Distance [km]')
+        ylim([1.6 2.2])
+        set(gca,'ytick',[1.6,1.8,2.0,2.2])
+        title('Snow Depth (m)')
+        set(gca,'xtick',[0, 20, 40, 60, 80])
+        xlabel('Distance (km)')
         set(findobj(gcf,'type','axes'),'FontName','Arial','FontSize',12,...
             'FontWeight','Bold', 'LineWidth', 1);
     end
