@@ -27,10 +27,9 @@
     
     % Estimate of Mean Annual Temperature    
     isLoadT2 = 1;
-%     annualT = -18; % [C]     
-%     annualT = -19; % [C]    
-%     annualT = -20; % [C]
-    annualT = -21.5; % [C]    
+    if ~isLoadT2
+      annualT = -25.5; %[C]
+    end
 
     % Array of Model Depths
     maxDepth = 30.001;
@@ -51,7 +50,7 @@
             
             if isLoadT2
                 t2Dir = '/home/tatemeehan/GreenTracs2017/ClimateData/';
-%                 t2Dir = 'E:\ArcticDataCenter\Data\Birkle';
+%                 t2Dir = 'D:\ArcticDataCenter\Data\Birkle';
                 t2file = 'merra_t2_1979-2012_monthly.nc';
                 [annualT] = reanalysisT2(t2Dir,t2file,XY{ii});
             end
@@ -74,38 +73,35 @@
             % Impose Herron-Langway (1980) Density Model
             [HerronLangwayDensity{ii}(:,jj),HerronLangwayAge{ii}(:,jj)] = ...
                 herronLangway(StackZ,annualT(jj),surfHL,accuHL);
-            
+            % Compute Cumulative Average
+            avgHerronLangwayDensity = movmean(HerronLangwayDensity{ii}(:,jj),...
+                [length(HerronLangwayDensity{ii}(:,jj))-1 0]);
             %%% Apply Surface Correction to Herron-Langway Model Here %%%
             radHLdepth0 = StackZ(2);
             radHLrho0 = SurfaceDensity{ii}(jj);
-            [~, radHLdepthIx1] = min(abs(StackZ - dhDepth{2,ii}(jj)));
+            [~, radHLdepthIx1] = min(abs(StackZ - ForcingDepth{ii}(jj)));
             radHLdepth1 = StackZ(radHLdepthIx1);
-            radHLrho1 = dhDensity{2,ii}(jj);
-            [~, radHLdepthIx2] = min(abs(StackZ - ForcingDepth{ii}(jj)));
-            radHLdepth2 = StackZ(radHLdepthIx2);
-            radHLrho2 = ForcingDensity{ii}(jj);
-            [~, radHLdepthIx3] = min(abs(StackZ - Depth{1,ii}(jj)));
-            radHLdepth3 = StackZ(radHLdepthIx3);
-            radHLrho3 = Density{1,ii}(jj);
+            radHLrho1 = avgHerronLangwayDensity(radHLdepthIx1);
             
-            % L2 Norm Regression
-            G = [1,radHLdepth0; 1,radHLdepth1;1,radHLdepth2; 1,radHLdepth3];
-            d = [radHLrho0;radHLrho1;radHLrho2;radHLrho3];
+            % L2 Regression
+            G = [1,radHLdepth0; 1,radHLdepth1];
+            d = [radHLrho0;radHLrho1];
             m = G\d;
             surfRhoHL = m(1);
             rhoRateHL = m(2);
             
             %%% Average Radar Derived Surface Density %%%
-            avgSurfacePiece = rhoRateHL.*StackZ(1:radHLdepthIx3) + surfRhoHL;
+            avgSurfacePiece = rhoRateHL.*StackZ(1:radHLdepthIx1) + surfRhoHL;
            
             %%% Causal Integration Inversion for Surface Density %%%
-            G = tril(ones(length(1:radHLdepthIx3)));
+            G = tril(ones(length(1:radHLdepthIx1)));
             d = avgSurfacePiece.*sum(G,2);
             m = G\d;
             SurfacePiece = m;
             
             % Find Intersection
             [~, PieceIx] = min(abs(HerronLangwayDensity{ii}(1:length(SurfacePiece),jj)-SurfacePiece));
+
             % Append Surface Piece
             HerronLangwayDensity{ii}(1:PieceIx-1,jj) = SurfacePiece(1:PieceIx-1);
             
