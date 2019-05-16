@@ -99,7 +99,7 @@ isReduceData = 1;       % Remove Every n Traces from Data Gather
 isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
 isKill = 1;             % Kill Unanted Channels
 isMedianSubtraction = 1;% Background Median Subtraction Filter
-isFXdecon = 1;          % Fx-Predicitive Deconvolution
+isFXdecon = 0;          % Fx-Predicitive Deconvolution
 isSWEDISH = 1;          % Perform Surface Velocity Analysis
 isDepthSection = 1;     % NMO Correction, Stacking, Depth Conversion, Image
 
@@ -421,12 +421,12 @@ if isDepthSection
         WiggleAlpha(WiggleAlpha<1) = 0;
         % Plot Density, Overlay Peak Amplitudes
         figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityModel{ii});colormap(yet_white);freezeColors;hold on;
-        imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
+        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
         colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[310,350,400,450,500,550,600,625]);
         set(get(hlay,'ylabel'),'String','Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         title('Density Tomogram')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         
@@ -442,8 +442,8 @@ if isDepthSection
         colormap(colorbrew);hlay = colorbar;
         set(get(hlay,'ylabel'),'String','Deviation from Mean Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         title('Density Anomaly')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         
@@ -454,7 +454,7 @@ if isDepthSection
 %         title('Mean Average Deviation - Density [kg/m^{3}]')
         % Plot Surface Density Deviation
         plot(Traverse{ii}./1000,1000.*SurfaceDensityDeviation{ii},'k','linewidth',3)
-        title('Surface Density - Deviation from Mean [kg/m^{3}]')
+        title('Surface Density - Deviation from Mean (kg/m^{3})')
         grid on
         set(gca,'fontsize',14,'fontweight','bold')
 %         set(hDA1,'units','normalized')
@@ -467,10 +467,10 @@ if isDepthSection
         imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
         colormap(colorbrew);hlay = colorbar;
 %         colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
-        set(get(hlay,'ylabel'),'String','Deviation from Mean Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
+        set(get(hlay,'ylabel'),'String','Deviation from Mean Density (kg/m^{3})', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         title('Density Anomaly')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         
@@ -481,14 +481,13 @@ if isDepthSection
         for kk = 1:size(DepthAge{ii},2)
         plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
         end
-        set(get(hlay,'ylabel'),'String','Age [a]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
+        set(get(hlay,'ylabel'),'String','Age (a)', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
         set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
         title('Isochronogram')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')            
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold') 
+  
     end
     %% Image Depth Section
     for ii = 1:nFiles
@@ -502,8 +501,8 @@ if isDepthSection
 %         plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
 %         end
         title('Core 15 Spur West - Depth Section')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         
 
@@ -523,8 +522,8 @@ if isDepthSection
         figure();imagesc(Traverse{ii}(compareIx)./1000,tStack{ii}(compareIy,1),AGCgain(Radar{4}(compareIy,compareIx),size(Radar{ii}(compareIy,compareIx),1)./round(3.5),2));
         colormap(cmapAdapt(Radar{4}(compareIy,compareIx),colorbrew));hold on;
         title('Core 15 Spur West - Time Section')
-        xlabel('Distance [km]')
-        ylabel('Travel-Time [ns]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Travel-Time (ns)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         axis square
                 
@@ -532,8 +531,8 @@ if isDepthSection
         figure();imagesc(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AGCgain(RadarDepth{ii}(compareIy,compareIx),size(RadarDepth{ii}(compareIy,compareIx),1)./round(3.5),2));
         colormap(cmapAdapt(RadarDepth{ii}(compareIy,compareIx),colorbrew));hold on;
         title('Core 15 Spur West - Depth Section')
-        xlabel('Distance [km]')
-        ylabel('Depth [m]','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
+        xlabel('Distance (km)')
+        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
         axis square
         
@@ -544,7 +543,7 @@ end
 isSaveHVA = 0;
 if isSaveHVA
     % Save Rough Results
-    HVAfilename = '6-12-17-Core15-Spur-W-HVA-SurfaceForcing-2016Corrected.mat';
+    HVAfilename = 'Core15SpurWHVA_051519.mat';
     save(HVAfilename,'AirTo','DirectTo','DirectToVar','deltaT',...
     'DirectVelocity','DirectVelocityVar','DirectDepth','DirectDepthVar',...
     'DirectDensity','DirectDensityVar','CovarianceDepthDensityDirect',...
@@ -557,7 +556,7 @@ if isSaveHVA
     'SWEvar','SWEintVar','-v7.3');
 
     % Save Smooth Results
-    HVAsmoothFilename = '6-12-17-Core15-Spur-W-HVAsmooth-SurfaceForcing-2016Corrected.mat';
+    HVAsmoothFilename = 'Core15SpurW_HVAsurfaceForcing_051519_2.mat';
     save(HVAsmoothFilename,'dhTWT','dhTWTvar','dhSnowWaterEqv',...
         'dhSnowWaterEqvVar','dhDensity','dhDensityVar','dhDepth',...
         'dhDepthVar','TWT','TWTvar','SnowWaterEqv',...
@@ -565,10 +564,10 @@ if isSaveHVA
         'LayerSnowWaterEqvVar','LayerDensity','LayerDensityVar','LayerThickness',...
         'LayerThicknessVar','SurfaceDensity','SurfaceDensityVar',...
         'SurfaceDensification','SurfaceDensificationVar','ForcingDensity',...
-        'ForcingDensityVar','ForcingDepth','ForcingDepthVar','AverageAccumulation''-v7.3');
+        'ForcingDensityVar','ForcingDepth','ForcingDepthVar','AverageAccumulation','-v7.3');
     
     % Save Bootstrap Distributions (Feed into MMxHL Modeling)
-    BootstrapFilename = '6-12-17-Core15-Spur-W-Bootstraps-2016Corrected.mat';
+    BootstrapFilename = 'Core15SpurW_Bootstraps_051519.mat';
     save(BootstrapFilename,'xToRef','xRhoDir','xRhoRef','xDepthDir','xDepth','-v7.3');
 end
     % Save Travel Time Picks
@@ -585,14 +584,14 @@ cd(workDir)
     % Save Modeled Output
     isSaveMxHL = 0;
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_051519.mat';
         GTC15SpurWMxHL = struct('Traverse',{Traverse},'DepthAxis',{DepthAxis},...
             'RadarDepth',{RadarDepth},'AgeModel',{AgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
             'AvgDensityModel',{AvgDensityModel},'MeanDensityDeviation',...
             {MeanDensityDeviation},'SurfaceDensityDeviation',{SurfaceDensityDeviation},...
             'IsoChrones', {Isochrones},'Ages',{Ages},'AverageAccumulation',{AverageAccumulation});
-        save(MxHLFilename,'GTC15SpurWMxHL','-v7.3');
+        save(MxHLFilename,'-struct','GTC15SpurWMxHL','-v7.3');
 
     end
 %% Create Figures for Snow Surface Data
