@@ -99,9 +99,9 @@ isReduceData = 1;       % Remove Every n Traces from Data Gather
 isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
 isKill = 1;             % Kill Unanted Channels
 isMedianSubtraction = 1;% Background Median Subtraction Filter
-isFXdecon = 0;          % Fx-Predicitive Deconvolution
 isSWEDISH = 1;          % Perform Surface Velocity Analysis
 isDepthSection = 1;     % NMO Correction, Stacking, Depth Conversion, Image
+isFXdecon = 1;          % Fx-Predicitive Deconvolution (Depth Domain)
 
 %% Control Parallelization
 if isParallel
@@ -178,21 +178,7 @@ if isMedianSubtraction
     display(' ')
 
 end
-%% FX Predicive Deconvolution
-if isFXdecon
-    fprintf('Begin FX-Predictive Deconvolution \n')
-    tic
-    
-    % Select Temporal or Spatial Deconvolution Gates: 1 on; 0 off;
-    isTemporalFXdecon = 1;
-    isSpatialFXdecon = 0;
 
-    FXdeconTX
-    
-    fprintf('FX-Deconvolution Done \n')
-    toc
-    display(' ')
-end
 %% Branch Processing for Direct and Reflected Arrivals
 directRadar = Radar;
 %% Snow Water Equivalent and Density for Ice Sheet Height
@@ -253,7 +239,13 @@ if isSWEDISH
         % Assume average is 0.3 [mwe]
         coreAccumulation = 0.3;
         % Average over 1.5 years Winter 2016 - Summer 2017
-        ageInterval = 2.5;            
+        ageInterval = 2.5;
+        % If Radar is not Paired with GPS or Ice Core data is not used 
+        % assume Ice Core is located adjacent to the first k traces of the 
+        % first radar file
+        k = 100; % Number of Radar Estimates to Estimate Core Site Average
+        iceCoreFileIx = 1;
+        iceCoreIx = 1:k;
     end
     
     % Toggle Inversion Scheme
@@ -347,12 +339,12 @@ if isDepthSection && ~isLoadMxHL
         display(' ')
     end
     %% Resize Density Model
-    fprintf('Begin Interpolation of MxHL Model \n')
+    fprintf('Begin Regrid of MxHL Model \n')
     tic
 
     MxHLmodel
 
-    fprintf('MxHL Model Interpolation Done \n')
+    fprintf('MxHL Model Regrid Done \n')
     toc
     display(' ')
     %% Radar Depth to Deposition Time Image
@@ -366,13 +358,12 @@ if isDepthSection && ~isLoadMxHL
     display(' ')
     
         %% Deposition Image FX-Deconvolution
-    isDepositionFXdecon = 1;
-    if isDepositionFXdecon
+    if isFXdecon
         fprintf('Begin Deposition Image FX-Predictive Deconvolution \n')
         tic
         
-        % Select Temporal or Spatial Deconvolution Gates: 1 on; 0 off;
-        isTemporalFXdecon = 1;
+        % Select Depth or Spatial Deconvolution Gates: 1 on; 0 off;
+        isDepthFXdecon = 1;
         isSpatialFXdecon = 0;
         
         DepositionFXdeconTX
@@ -407,6 +398,7 @@ end
 if isDepthSection
     % Load ColorBrewer 
     set(0,'DefaultAxesFontName','FreeSerif')
+    set(0,'DefaultTextFontName','FreeSerif')
     [colorbrew , ~, ~] = brewermap(256,'RdYlBu');
     colorbrew=flipud(colorbrew);
     colorQ = colorbrew(round(quantile(1:256,[0.85,0.5,0.15])),:);
@@ -518,16 +510,16 @@ if isDepthSection
         
         % Compare Time to Depth Images
         compareIx = 7550:11500;
-        compareIy = 150:550;
+        compareIy = 165:765;
         % Salt and Pepper Time Image
-        figure();imagesc(Traverse{ii}(compareIx)./1000,tStack{ii}(compareIy,1),AGCgain(Radar{4}(compareIy,compareIx),size(Radar{ii}(compareIy,compareIx),1)./round(3.5),2));
+        figure();imagesc(Traverse{ii}(compareIx)./1000,tStack{ii}(compareIy,1),AGCgain(RadarNMO{8}(compareIy,compareIx),size(Radar{ii}(compareIy,compareIx),1)./round(3.5),2));
         colormap(cmapAdapt(Radar{4}(compareIy,compareIx),colorbrew));hold on;
         title('Core 15 Spur West - Time Section')
         xlabel('Distance (km)')
         ylabel('Travel-Time (ns)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
-        axis square
-                
+%         axis square
+        compareIy = 150:750;
         % Bread and Butter Depth Image
         figure();imagesc(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AGCgain(RadarDepth{ii}(compareIy,compareIx),size(RadarDepth{ii}(compareIy,compareIx),1)./round(3.5),2));
         colormap(cmapAdapt(RadarDepth{ii}(compareIy,compareIx),colorbrew));hold on;
@@ -535,7 +527,7 @@ if isDepthSection
         xlabel('Distance (km)')
         ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold')
-        axis square
+%         axis square
         
     end
     
@@ -544,7 +536,7 @@ end
 isSaveHVA = 0;
 if isSaveHVA
     % Save Rough Results
-    HVAfilename = 'Core15SpurWHVA_051619.mat';
+    HVAfilename = 'Core15SpurWHVA_061319.mat';
     save(HVAfilename,'AirTo','DirectTo','DirectToVar','deltaT',...
     'DirectVelocity','DirectVelocityVar','DirectDepth','DirectDepthVar',...
     'DirectDensity','DirectDensityVar','CovarianceDepthDensityDirect',...
@@ -557,7 +549,7 @@ if isSaveHVA
     'SWEvar','SWEintVar','-v7.3');
 
     % Save Smooth Results
-    HVAsmoothFilename = 'Core15SpurW_HVAsurfaceForcing_051619.mat';
+    HVAsmoothFilename = 'Core15SpurW_HVAsurfaceForcing_061319.mat';
     save(HVAsmoothFilename,'dhTWT','dhTWTvar','dhSnowWaterEqv',...
         'dhSnowWaterEqvVar','dhDensity','dhDensityVar','dhDepth',...
         'dhDepthVar','TWT','TWTvar','SnowWaterEqv',...
@@ -568,7 +560,7 @@ if isSaveHVA
         'ForcingDensityVar','ForcingDepth','ForcingDepthVar','AverageAccumulation','-v7.3');
     
     % Save Bootstrap Distributions (Feed into MMxHL Modeling)
-    BootstrapFilename = 'Core15SpurW_Bootstraps_051619.mat';
+    BootstrapFilename = 'Core15SpurW_Bootstraps_061319.mat';
     save(BootstrapFilename,'xToRef','xRhoDir','xRhoRef','xDepthDir','xDepth','-v7.3');
 end
     % Save Travel Time Picks
@@ -585,7 +577,7 @@ cd(workDir)
     % Save Modeled Output
     isSaveMxHL = 0;
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_051619.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_061319.mat';
         GTC15SpurWMxHL = struct('Traverse',{Traverse},'DepthAxis',{DepthAxis},...
             'RadarDepth',{RadarDepth},'AgeModel',{AgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
@@ -685,45 +677,6 @@ if isSWEDISH
         figure();
         subplot(3,1,1)
 %         for dh = 2:nDirectHorizon
-%             shadedErrorBarT8(distance,dhSnowWaterEqv{dh,ii},...
-%                 sqrt(dhSnowWaterEqvVar{dh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-%             hold on;
-%         end
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance,AverageAccumulation{ii},...
-                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});            
-%             shadedErrorBarT8(distance,SnowWaterEqv{rh,ii},...
-%                 sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        set(gca,'xticklabel',[])
-        set(gca,'ytick',[0.24,0.27,0.3,0.33])
-        title('Average Annual Accumulation (m w.e. a^{-1})')
-        subplot(3,1,2)
-        for dh = 2:nDirectHorizon
-            shadedErrorBarT8(distance,dhDensity{dh,ii}.*1000,...
-                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
-%                 sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
-            hold on;
-        end
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance,Density{rh,ii}.*1000,...
-                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
-%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis ij
-        axis tight
-        grid on
-        set(gca,'xticklabel',[])
-        title('Average Density (kg/m^{3})')
-        subplot(3,1,3)
-%         for dh = 2:nDirectHorizon
 %             shadedErrorBarT8(distance,dhDepth{dh,ii},...
 %                 sqrt(dhDepthVar{dh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
 %             hold on;
@@ -742,10 +695,51 @@ if isSWEDISH
         grid on
         ylim([1.6 2.2])
         set(gca,'ytick',[1.6,1.8,2.0,2.2])
+        set(gca,'xticklabel',[])
         title('Snow Depth (m)')
-        set(gca,'xtick',[0, 20, 40, 60, 80])
+        subplot(3,1,2)
+        for dh = 2:nDirectHorizon
+            shadedErrorBarT8(distance,dhDensity{dh,ii}.*1000,...
+                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+            hold on;
+        end
+        for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance,Density{rh,ii}.*1000,...
+                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+            hold on;
+        end
+        freezeColors
+        axis ij
+        axis tight
+        grid on
+        set(gca,'xticklabel',[])
+        set(gca,'ytick',[350,375,400])
+        title('Average Density (kg/m^{3})')
+        subplot(3,1,3)
+%         for dh = 2:nDirectHorizon
+%             shadedErrorBarT8(distance,dhSnowWaterEqv{dh,ii},...
+%                 sqrt(dhSnowWaterEqvVar{dh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+%             hold on;
+%         end
+        for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance,AverageAccumulation{ii},...
+                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});            
+%             shadedErrorBarT8(distance,SnowWaterEqv{rh,ii},...
+%                 sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+            hold on;
+        end
+        freezeColors
+        axis tight
+        axis ij
+        grid on
+        set(gca,'ytick',[0.24,0.27,0.3,0.33])
+        title('Average Annual Accumulation (m w.e. a^{-1})')
+        set(gca,'xtick',1000.*[0, 20, 40, 60, 78])
+        set(gca,'xticklabel',[0,20,40,60,78])
         xlabel('Distance (km)')
-        set(findobj(gcf,'type','axes'),'FontName','Arial','FontSize',12,...
+        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
             'FontWeight','Bold', 'LineWidth', 1);
     end
 end
