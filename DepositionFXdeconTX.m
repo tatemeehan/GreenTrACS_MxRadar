@@ -1,4 +1,4 @@
-    if isTemporalFXdecon
+    if isDepthFXdecon
     % Spatial Predictive Filtering for Random Noise Suression
     Window = 2/dt; % Number of Temporal Samples in Fx-Decon Window Per Computation
     Overlap = round(Window/2); % Number of Overlapping Computations
