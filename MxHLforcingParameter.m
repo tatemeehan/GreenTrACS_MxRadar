@@ -79,11 +79,11 @@ for ii = 1:nFiles
         rateVar,1:length(rateVar),smoothR);
 
 % The Forcing Density of Herron-Langway (1980) is to Good Approximation the
-% RMS Average Density of the Snow (Previously the mean of surface and snow)
-ForcingDensity{ii} = Density{1,ii};%mean([dhDensity{2,ii},Density{1,ii}],2);
-ForcingDensityVar{ii} = DensityVar{1,ii};%mean([dhDensityVar{2,ii},DensityVar{1,ii}],2);
-ForcingDepth{ii} = Depth{1,ii};% mean([dhDepth{2,ii},Depth{1,ii}],2);
-ForcingDepthVar{ii} = DepthVar{1,ii};%mean([dhDepthVar{2,ii},DepthVar{1,ii}],2);
+% the mean of the LMO and NMO derived density
+ForcingDensity{ii} = mean([dhDensity{2,ii},Density{1,ii}],2);
+ForcingDensityVar{ii} = mean([dhDensityVar{2,ii},DensityVar{1,ii}],2);
+ForcingDepth{ii} =  mean([dhDepth{2,ii},Depth{1,ii}],2);
+ForcingDepthVar{ii} = mean([dhDepthVar{2,ii},DepthVar{1,ii}],2);
     
 end
 end

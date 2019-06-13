@@ -237,10 +237,11 @@ if isSWEDISH
 
     % Bias Calibration at Core 15W Pit (Observed - Estimated);
     % This is a 1.72% Adjustment
+    % Correction has been removed
     velocityBias = 0.004;      % [m/ns]
     densityBias = -.0258902;   % [g/cm3]
     
-    isGreenTracsFirnCore = 1;
+    isGreenTracsFirnCore = 0;
     if isGreenTracsFirnCore
         isCoreDepthAge = 1; % Use Age Depth Profile from Local Core Site
         coreNo = [15]; % Array of Firn Cores 1-16 to include in analysis
@@ -252,7 +253,7 @@ if isSWEDISH
         % Assume average is 0.3 [mwe]
         coreAccumulation = 0.3;
         % Average over 1.5 years Winter 2016 - Summer 2017
-        ageInterval = 1.5;            
+        ageInterval = 2.5;            
     end
     
     % Toggle Inversion Scheme

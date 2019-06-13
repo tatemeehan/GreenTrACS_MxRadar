@@ -159,10 +159,10 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
                     % Apply To Static Shift Post Residual Correction
                     xToDir{dh,jj,ii} = xToDir{dh,jj,ii} - AirTo{ii,jj};
                     % Apply Velocity Bias Correction Factor 1.72%
-                    xVdir{dh,jj,ii} = xVdir{dh,jj,ii} + velocityBias;
+                    xVdir{dh,jj,ii} = xVdir{dh,jj,ii}%; + velocityBias;
                     % Estimate Wavelet Depth
-                    % Sounding Depth at One Half Wavelength
-                    waveLength = (xVdir{dh,jj,ii}./f0GHz)./2;
+                    % Sounding Depth at One Wavelength
+                    waveLength = (xVdir{dh,jj,ii}./f0GHz);
                         % L1 Norm Forces Variance of To Positive Downward
                     xDepthDir{dh,jj,ii} = xVdir{dh,jj,ii}.*abs(xToDir{dh,jj,ii})...
                         + waveLength;
@@ -310,7 +310,7 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
                     end
                 end
             % Apply Velocity Bias Correction Factor % 1.72
-            xVref{rh,jj,ii} = xVref{rh,jj,ii} + velocityBias;
+            xVref{rh,jj,ii} = xVref{rh,jj,ii};% + velocityBias;
             % Create Bootstrapped Population of Reflection Density
             xRhoRef{rh,jj,ii} = DryCrim([xVref{rh,jj,ii}]);
             
