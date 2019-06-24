@@ -27,13 +27,31 @@
         AvgDensityModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             StackingDensity{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Nearest Extrapolation
-        AvgDensityModel{ii}(1,:) = AvgDensityModel{ii}(2,:);        
+        AvgDensityModel{ii}(1,:) = AvgDensityModel{ii}(2,:);
         
         % Resize Depth-Age Model
         AgeModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             HerronLangwayAge{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Zero Age
         AgeModel{ii}(1,:) = 0;
+        if isLoadGPS & isMEaSUREs
+            measuresDir = '/home/tatemeehan/GreenTracs2017/MEaSUREs';
+            filenameX = 'greenland_vel_mosaic250_vx_v1.tif';
+            filenameY = 'greenland_vel_mosaic250_vy_v1.tif';
+            surfV = surfaceVelocity(measuresDir,filenameX,filenameY,trhd{ii});
+            % Compute X-Position Perturbation for Age Model
+            deltaX = surfV'.*AgeModel{ii};           
+            dxStack = xStack{ii}+deltaX;
+            dxStack = double(dxStack);
+            % Correct Depth-Age Model for Lateral Firn Advection
+            tmpAgeModel = griddata(xStack{ii},DepthMatrix{ii},...
+                AgeModel{ii},dxStack,DepthMatrix{ii},'linear');
+            ageNaNix = find(isnan(tmpAgeModel));
+            tmpAgeModel(ageNaNix) = AgeModel{ii}(ageNaNix);
+            AgeModel{ii} = tmpAgeModel;
+            clear('tmpAgeModel')
+        end
+
         % Determine Critical Depth 
         for kk = 1:size(DensityModel{ii},2)
             ix550(kk) = find(DensityModel{ii}(:,kk)>.550,1);
@@ -49,7 +67,8 @@
         % Calculate Accumulation Rate from Maximum Isochrone to Surface
         
         MaxAge = floor(min(AgeModel{ii}(end,:)));
-        Ages{ii} = [1:5:MaxAge];
+%         Ages{ii} = [1:5:MaxAge];
+        Ages{ii} = [5:5:20];
         Isochrones = abs(str2num(Year{ii}) - Ages{ii});
         for kk = 1:length(Isochrones)
         [~, AgeIx] = min(abs(AgeModel{ii}-Ages{ii}(kk)));

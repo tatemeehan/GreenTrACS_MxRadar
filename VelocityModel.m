@@ -47,7 +47,7 @@
             TraverseX{ii} = ones(length(StackZ),1)*Traverse{ii};
             % Depth Grid
             StackDepth{ii} = StackZ*ones(1,length(Traverse{ii}));
-            
+            % Import Reanalysis Temperatures
             if isLoadT2
                 t2Dir = '/home/tatemeehan/GreenTracs2017/ClimateData/';
 %                 t2Dir = 'D:\ArcticDataCenter\Data\Birkle';
@@ -67,8 +67,16 @@
             % Extract Radar Forcing for Herron-Langway Model
             surfHL = ForcingDensity{ii}(jj);
             % radar estimates are tranfered to ice core accumulation 
+            if isGreenTracsFirnCore
+                % Correct Accumulation to 30 year mean
             accuHL = coreAccumulation(1) + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
                 mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
+            else
+                % Use aproximation that past 2.5 years represents mean
+                iceCoreFileIx = 1;
+                accuHL = SnowWaterEqv{1,iceCoreFileIx}(jj);
+            end
+            
             AverageAccumulation{ii}(jj) = accuHL;
             % Impose Herron-Langway (1980) Density Model
             [HerronLangwayDensity{ii}(:,jj),HerronLangwayAge{ii}(:,jj)] = ...
@@ -125,7 +133,7 @@
             tmp2 = mean(HerronLangwayAge{ii}(:,iceCoreIx(ii,:)),2);
             % Compute Residual (Observed - Estimated)
             isochroneResidual(:,ii) = tmp1-tmp2;
-            % Update Model Positive is Downwars so Residual should be Added
+            % Update Model Positive is Downwards so Residual should be Added
             HerronLangwayAge{ii} = HerronLangwayAge{ii} + isochroneResidual(:,ii);
             % Remove any Numerical Bias
             HerronLangwayAge{ii}(1,:) = zeros(1,size(HerronLangwayAge{ii}(1,:),2));
