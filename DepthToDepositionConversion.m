@@ -35,7 +35,7 @@
 %             [newAge(:,kk)] = timeDepthConversion(ageStak(:,kk),zacurve,DepositAxe);
         end
         RadarDeposition{ii} = RadDeposition;
-%         depositionAgeModel{ii} = newAge;%
+%         depositionAgeModel{ii} = newAge;
         depositionAgeModel{ii} = ones(1,size(RadarDeposition{ii},2)).*DepositionAxis{ii};
     end
     clear('RadDeposition','RadDepth','DepositAxe','zStak','ageStak');
