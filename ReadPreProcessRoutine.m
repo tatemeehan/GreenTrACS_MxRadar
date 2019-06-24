@@ -260,7 +260,11 @@
                 % Overwrite Distance with Bin Center Position [m]
                 tmp = mean(trhd{ii}(16,jj:jj+nChan-1),2)*ones(1,nChan);
                 trhd{ii}(2,jj:jj+nChan-1) = tmp;
+                % Overwrite Tailing with Average Bin Center Heading
+                trhd{ii}(20,jj:jj+nChan-1) = mean(trhd{ii}(19,jj:jj+nChan-1),2)*ones(1,nChan);
             end
+            % Smooth Heading
+%             trhd{ii}(20,:) = nonParametricSmooth(1:length(trhd{ii}),trhd{ii}(20,:),1:length(trhd{ii}),251.*nChan);
             % Zero Starting Distance
             tmp = trhd{1}(2,1);
             trhd{ii}(2,:) = trhd{ii}(2,:) - tmp;

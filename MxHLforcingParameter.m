@@ -2,7 +2,7 @@
 % This Routine Estimates the Surface Density and Forcing Density for the 
 % MxHL model and the uncertainties of these paramters. 
 
-if ~isSWEDISH
+if ~isSWEDISH || isLoadHVA
     % Determine Maximum File Size
     nTrace = zeros(1,nFiles);
     for ii = 1:nFiles
@@ -10,6 +10,9 @@ if ~isSWEDISH
     end
     % Maxiumum Traces to Loop Over
     nTrace = max(nTrace);
+    
+    % Smoothing Window Length
+    smoothR = 251;
 end
 
 if ~isLoadHVA || ~isLoadMxHL
@@ -27,13 +30,18 @@ ForcingDepthVar = cell(nFiles,1);
 for ii = 1:nFiles
     MCsamples = 250;
     % Allocation
+    fDensity = zeros(length(looper),1);
+    fDensityVar = zeros(length(looper),1);
+    fDepth = zeros(length(looper),1);
+    fDepthVar = zeros(length(looper),1);
     surfVar = zeros(length(looper),1);
     rateVar = zeros(length(looper),1);
     surfDensity = zeros(length(looper),1);
     densityRate = zeros(length(looper),1);
     
-    % MC BootStrapping Regression for Surface Density Extrapolation
+    % MC BootStrapping Regression for Forcing Density and Surface Density
     parfor (jj = looper, nWorkers)
+
         % Ensure Real Indicies
         realIx = find(real([xToRef{1,jj,ii}]));
         % Create Indicies for Sampling
@@ -51,6 +59,13 @@ for ii = 1:nFiles
         % rh = 1 Primary Reflection Horizon
         xStrapDepthRef = xDepth{1,jj,ii}(refSample);
         xStrapRhoRef = xRhoRef{1,jj,ii}(refSample);
+        
+        % The Forcing Density of Herron-Langway (1980) is to Good Approximation the
+        % the mean of the LMO and NMO derived density
+        fDensity(jj) = mean(mean([xStrapRhoDir,xStrapRhoRef],2));
+        fDensityVar(jj) = var(mean([xStrapRhoDir,xStrapRhoRef],2));
+        fDepth(jj) =  mean(mean([xStrapDepthDir,xStrapDepthRef],2));
+        fDepthVar(jj) = var(mean([xStrapDepthDir,xStrapDepthRef],2));
         
         % Allocation
         surfRho = zeros(MCsamples,1);
@@ -80,10 +95,14 @@ for ii = 1:nFiles
 
 % The Forcing Density of Herron-Langway (1980) is to Good Approximation the
 % the mean of the LMO and NMO derived density
-ForcingDensity{ii} = mean([dhDensity{2,ii},Density{1,ii}],2);
-ForcingDensityVar{ii} = mean([dhDensityVar{2,ii},DensityVar{1,ii}],2);
-ForcingDepth{ii} =  mean([dhDepth{2,ii},Depth{1,ii}],2);
-ForcingDepthVar{ii} = mean([dhDepthVar{2,ii},DepthVar{1,ii}],2);
+ForcingDensity{ii} = nonParametricSmooth( 1:length(fDensity),...
+        fDensity,1:length(fDensity),smoothR);
+ForcingDensityVar{ii} = nonParametricSmooth( 1:length(fDensityVar),...
+        fDensityVar,1:length(fDensityVar),smoothR);
+ForcingDepth{ii} = nonParametricSmooth( 1:length(fDepth),...
+        fDepth,1:length(fDepth),smoothR);
+ForcingDepthVar{ii} = nonParametricSmooth( 1:length(fDepthVar),...
+        fDepthVar,1:length(fDepthVar),smoothR);
     
 end
 end

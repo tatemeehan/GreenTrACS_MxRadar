@@ -73,6 +73,7 @@
                 mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
             else
                 % Use aproximation that past 2.5 years represents mean
+                iceCoreFileIx = 1;
                 accuHL = SnowWaterEqv{1,iceCoreFileIx}(jj);
             end
             
