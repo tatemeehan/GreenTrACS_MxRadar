@@ -82,6 +82,10 @@ isPicking = 1;
 global isManualPick
 isManualPick = 0;
 
+% Create Pick Rate Callback
+global pickMod
+pickMod = 10; % Default is mod,10
+
 % Refresh Horizon Workspace
 isClear = 1;
 
@@ -104,12 +108,20 @@ for ii = 1:nFiles
         btn2 = uicontrol('Style', 'pushbutton', 'String', 'Manual Pick',...
            'FontWeight','bold','FontSize',12,'Position', [15 150 115 50],...
             'Callback',{@manualPick});
+        btn3 = uicontrol('style','slider','String','Pick Display Density',...
+            'FontWeight','bold','FontSize',12,'Position', [15 225 115 50],...
+            'Callback',{@pickDisplayDensity});
+        set(btn3,'Value',pickMod,'min',1,'max',25);
+                annotation('textbox',[.005,.19,.2,.2],'String',...
+                    'slow                    fast','fontweight','bold',...
+                    'FitBoxToText','on','LineStyle','none')
         set(h,'WindowKeyPressFcn',@keyPressCallback);
         imagesc(Radar{jj,ii});colormap(cmap);hold on;
         
         while kk <= nHorizon
             if isClear
                 zoom out;   % Refresh orignal trace display
+                zoom off;
                 % Construct a questdlg to Choose Pick Snap
                 if nargin < 2;
                     prompt = ['*',blanks(2),'Which wavelet phase will you pick?',blanks(2),'*'];
@@ -147,7 +159,7 @@ for ii = 1:nFiles
                 end
                 
                 look = 3;   % Window Dimension (2.*look+1,look)
-                fore = 25;  % Step Distance for Next Prediction
+                fore = 5;  % Step Distance for Next Prediction
                 pace = 1;   % Counter
                 
                 % Prevent Bad Seed Pick and Subsequent Errors
@@ -252,26 +264,39 @@ for ii = 1:nFiles
                 % Append to Prior Picks
                 lIx = find(pickX{jj,kk,ii} < min(manX),1,'last');
                 hIx = find(pickX{jj,kk,ii} > max(manX),1);
-                if isempty(hIx) & isempty(lIx)
+                if isempty(hIx) & isempty(lIx) % Case: Only Manual Picks
                     pickX{jj,kk,ii}(1:length(manX)) = sortManX;
                     pickT{jj,kk,ii}(1:length(manX)) = manT(sortIx);
                     if strcmp(snap,'zero')
                         pickTP{jj,kk,ii}(1:length(manX)) = manT(sortIx);
                         pickTT{jj,kk,ii}(1:length(manX)) = manT(sortIx);
                     end
-                elseif isempty(hIx)
+                elseif isempty(hIx) % Case: Trailing Manual Picks
                     pickX{jj,kk,ii}(lIx+1:lIx+length(manX)) = sortManX;
                     pickT{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
                     if strcmp(snap,'zero')
                         pickTP{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
                         pickTT{jj,kk,ii}(lIx+1:lIx+length(manX)) = manT(sortIx);
                     end
-                elseif isempty(lIx)
+                elseif isempty(lIx) % Case: Leading Manual Picks
                     pickX{jj,kk,ii}(1:length(manX)) = sortManX;
                     pickT{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
                     if strcmp(snap,'zero')
                         pickTP{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
                         pickTT{jj,kk,ii}(1:length(manX)) =  manT(sortIx);
+                    end
+                else % Case: Surrounded Manual Picks
+                    tmpX = pickX{jj,kk,ii};
+                    tmpT = pickT{jj,kk,ii};
+                    pickX{jj,kk,ii}(lIx+1:(lIx+length(manX))) = sortManX;
+                    pickT{jj,kk,ii}(lIx+1:(lIx+length(manX))) = manT(sortIx);
+                    pickX{jj,kk,ii}(lIx+length(manX)+1:lIx+length(manX)+length(tmpX(hIx:end))) = tmpX(hIx:end);
+                    pickT{jj,kk,ii}(lIx+length(manX)+1:lIx+length(manX)+length(tmpX(hIx:end))) = tmpT(hIx:end);
+                    if strcmp(snap,'zero')
+                        pickTP{jj,kk,ii}(lIx+1:(lIx+length(manX))) = manT(sortIx);
+                        pickTP{jj,kk,ii}(lIx+length(manX)+1:lIx+length(manX)+length(tmpX(hIx:end))) = tmpT(hIx:end);
+                        pickTP{jj,kk,ii}(lIx+1:(lIx+length(manX))) = manT(sortIx);
+                        pickTP{jj,kk,ii}(lIx+length(manX)+1:lIx+length(manX)+length(tmpX(hIx:end))) = tmpT(hIx:end);
                     end
                 end
                 % Reset Pace Counter
@@ -305,25 +330,24 @@ for ii = 1:nFiles
                 pickX{jj,kk,ii}(pace) = x;%pickX{jj,kk,ii}(pace+1:end) = [];
                 % Clear Bad Picks from Figure
                 items = get(gca,'Children');
-                nBadPicks = tmp - pace + 1;
-                % If User Skips Ahead Remove No Picks
-                if nBadPicks <= 0
-                    nBadPicks = [];
+                nitems = length(items);
+                chilIx = zeros(nitems,1);
+                mm = 0;
+                for ll = 1:nitems
+                    if strcmp(class(items(ll)),'matlab.graphics.chart.primitive.Line')
+                        if items(ll).Marker == '.'
+                            mm = mm + 1;
+                            chilIx(mm) = items(ll).XData;
+                        end
+                    end
                 end
-                if strcmp(snap,'zero')
-                    % Remove Peak and Trough Picks if Zero-Corssing
-                    nBadPicks = 2.*nBadPicks;
-                end
+                chilIx(mm+1:end) = [];
+                rmIx = find(chilIx >= x);
+                
                 % Delete Graphics
-                try
-                    delete(items(1:nBadPicks))
-                    % Clear Graphics Memory
-                    items(1:nBadPicks) = [];
-                catch
-                    delete(items(1:length(items)-1))
-                    % Clear Graphics Memory
-                    items((1:length(items)-1)) = [];
-                end
+                delete(items(rmIx))
+                % Clear Graphics Memory
+                items(rmIx) = [];
                 
                 % Plot ReSeed Pick on Current Figure
                 if strcmp(snap,'peak')
@@ -464,8 +488,11 @@ for ii = 1:nFiles
                 pickX{jj,kk,ii}(pace) = x;
                 pickT{jj,kk,ii}(pace) = t;
                 % Plot Current Pick
+                if mod(pace,pickMod) == 0
                 pause on; pause(0.1);
                 figure(gcf);plot(x,t,'.','color',peakColor)
+                end
+                clear ('Map')
                 
             elseif strcmp(snap,'trough')
                 % Bin Theta Vaules
@@ -488,8 +515,10 @@ for ii = 1:nFiles
                 pickX{jj,kk,ii}(pace) = x;
                 pickT{jj,kk,ii}(pace) = t;
                 % Plot Current Pick
+                if mod(pace,pickMod) == 0
                 pause on; pause(0.1);
                 figure(gcf);plot(x,t,'.','color',troughColor)
+                end
                 clear ('Map')
                 
             elseif strcmp(snap,'zero')
@@ -529,10 +558,12 @@ for ii = 1:nFiles
                 pickTP{jj,kk,ii}(pace) = tp;
                 pickTT{jj,kk,ii}(pace) = tt;
                 % Plot Current Picks
+                if mod(pace,pickMod) == 0
                 pause on; pause(0.1);
                 figure(gcf);plot(x,tp,'.','color',peakColor);
                 plot(x,tt,'.','color',troughColor)
-                    clear ('MapT','MapP')
+                end
+                clear ('MapT','MapP')
             end
         end
         
@@ -543,8 +574,13 @@ for ii = 1:nFiles
         questPick = questdlg(prompt, titleTxt,'Yes','No','Yes');
         switch questPick
             case 'Yes'
+                % Sort Picks Ascending incase of misIndices
+                [pickX{jj,kk,ii}, sortIx] = sort(pickX{jj,kk,ii});
+                pickT{jj,kk,ii} = pickT{jj,kk,ii}(sortIx);
             if strcmp(snap,'zero')
                 % Zero-Cross is Average of Peak and Trough Picks
+                pickTP{jj,kk,ii} = pickTP{jj,kk,ii}(sortIx);
+                pickTT{jj,kk,ii} = pickTT{jj,kk,ii}(sortIx);
                 pickT{jj,kk,ii} = floor(mean([pickTP{jj,kk,ii};pickTT{jj,kk,ii}],1));
             end
             
@@ -571,17 +607,17 @@ for ii = 1:nFiles
             % Plot Smoothed Picks
             if strcmp(snap,'peak')
                 figure(gcf);
-                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'.','color',peakColor)
+                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'-','color',peakColor,'linewidth',2)
             end
             
             if strcmp(snap,'trough')
                 figure(gcf);
-                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'.','color',troughColor)
+                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'-','color',troughColor,'linewidth',2)
             end
             
             if strcmp(snap,'zero')
                 figure(gcf);
-                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'.','color',zeroColor)
+                plot(pickX{jj,kk,ii},pickT{jj,kk,ii},'-','color',zeroColor,'linewidth',2)
             end
             
             % Test Horizon Count for Iteration
@@ -687,6 +723,11 @@ else
     display('Press M key or Push Button to Enter')
 end
     
+end
+
+function pickDisplayDensity(src,evnt)
+global pickMod
+pickMod = round(evnt.Source.Value);
 end
 
 function keyPressCallback(src,event)

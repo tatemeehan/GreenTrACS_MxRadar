@@ -18,6 +18,7 @@
     trhd = cell(1,nFiles);
 %     GPS = cell(1,nFiles);
     Year = cell(1,nFiles);
+    TimeAxis = cell(1,nFiles);
     
     for ii = 1 : nFiles
         tic
@@ -302,7 +303,7 @@
                 
                 % Create Temporary Two-Way Time
                 tmpTime = [0:dt:(size(Radar{jj,ii},1)-(1+padding))*dt];
-
+                
                 % Apply Systematic Channel Shifts
                 if chanShift(jj) < 0
                     tmp = padarray(Radar{jj,ii},[abs(chanShift(jj)),0],...
@@ -324,13 +325,15 @@
 %                 fprintf(['Begin Signal Processing in Common-Offset Domain ',...
 %                     filename, ' CHAN0', num2str(jj),'\n'])
 
-                Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt );               
+                Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt );
 
         end
         if isReduceData
             tmpIx = sort(cat(2,traceIx{:,ii}));
             trhd{ii} = trhd{ii}(:,tmpIx);
         end
+        % Store Travel-Time Axis
+        TimeAxis{ii} = [0:dt:(dt.*(size(Radar{1,ii},1)-1))]';
         
         fprintf('Signal Processing Done \n')
         toc

@@ -62,7 +62,7 @@ Vtheta = atan2d(Vx(Vix),Vy(Vix));
 Vtheta = Vtheta + (Vtheta < 0)*360;
 % Calculate Resultant Magnitude 
 % Direction of Ice Motion Relative to Array Direction
-dTheta = heading - Vtheta;
+dTheta = heading(:) - Vtheta;
 Vresult = Vmag.*cosd(dTheta);
 
 end

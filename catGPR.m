@@ -36,5 +36,6 @@
          tmptrhd = [trhd{:}];
          trhd = cell(1,nFiles);
          trhd{nFiles} = tmptrhd;
+         TimeAxis(2:end) = [];
          clear('tmptrhd');
     end

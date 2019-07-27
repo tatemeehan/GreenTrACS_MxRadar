@@ -6,8 +6,10 @@
     AgeModel = cell(nFiles,1);
     Ages = cell(nFiles,1);
     DensityModel = cell(nFiles,1);
+    InstantVelocityModel = cell(nFiles,1);
     DensityAnomalyModel = cell(nFiles,1);
     AvgDensityModel = cell(nFiles,1);
+    StackingVelocityModel = cell(nFiles,1);
     MeanDensityDeviation = cell(nFiles,1);
     SurfaceDensityDeviation = cell(nFiles,1);
     DepthAge = cell(nFiles,1);
@@ -22,35 +24,22 @@
             HerronLangwayDensity{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Nearest Extrapolation
         DensityModel{ii}(1,:) = DensityModel{ii}(2,:);
+        % Compute Instantaneous Velocity Model
+        InstantVelocityModel{ii} = DryCrimVRMS(DensityModel{ii});
         
         % Resize Depth-AvgDensity Model
         AvgDensityModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             StackingDensity{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Nearest Extrapolation
         AvgDensityModel{ii}(1,:) = AvgDensityModel{ii}(2,:);
+        % Compute Resized Stacking Velocities
+        StackingVelocityModel{ii} = DryCrimVRMS(AvgDensityModel{ii});
         
         % Resize Depth-Age Model
         AgeModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             HerronLangwayAge{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Zero Age
         AgeModel{ii}(1,:) = 0;
-        if isLoadGPS & isMEaSUREs
-            measuresDir = '/home/tatemeehan/GreenTracs2017/MEaSUREs';
-            filenameX = 'greenland_vel_mosaic250_vx_v1.tif';
-            filenameY = 'greenland_vel_mosaic250_vy_v1.tif';
-            surfV = surfaceVelocity(measuresDir,filenameX,filenameY,trhd{ii});
-            % Compute X-Position Perturbation for Age Model
-            deltaX = surfV'.*AgeModel{ii};           
-            dxStack = xStack{ii}+deltaX;
-            dxStack = double(dxStack);
-            % Correct Depth-Age Model for Lateral Firn Advection
-            tmpAgeModel = griddata(xStack{ii},DepthMatrix{ii},...
-                AgeModel{ii},dxStack,DepthMatrix{ii},'linear');
-            ageNaNix = find(isnan(tmpAgeModel));
-            tmpAgeModel(ageNaNix) = AgeModel{ii}(ageNaNix);
-            AgeModel{ii} = tmpAgeModel;
-            clear('tmpAgeModel')
-        end
 
         % Determine Critical Depth 
         for kk = 1:size(DensityModel{ii},2)
