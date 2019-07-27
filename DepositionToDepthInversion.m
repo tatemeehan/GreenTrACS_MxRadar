@@ -8,15 +8,15 @@ RadarDepth = RadarDeposition;
         RadDepth = zeros(size(RadarDeposition{ii}));
         % Axis for Deposition Image
         zStak = DepthAxis{ii};
-        if isPickAgeHorizons || isLoadIRH
-            ageStak = depositionAgeModel{ii};
-            DepositionAxis{ii} = (linspace(0,max(ageStak(:)),size(RadarDeposition{ii},1)))';
-            DepositAxe = DepositionAxis{ii};
-        else
+%         if isPickAgeHorizons || isLoadIRH
+%             ageStak = depositionAgeModel{ii};
+%             DepositionAxis{ii} = (linspace(0,max(ageStak(:)),size(RadarDeposition{ii},1)))';
+%             DepositAxe = DepositionAxis{ii};
+%         else
         ageStak = AgeModel{ii};
         DepositionAxis{ii} = (linspace(0,max(ageStak(:)),size(RadarDeposition{ii},1)))';
         DepositAxe = DepositionAxis{ii};
-        end
+%         end
         % Grid Search for Depths Occurs in DepthtoDepositionConversion.m
         % Convert Deposition Time Image to Depth Image
         parfor (kk = 1:size(RadarDeposition{ii},2), nWorkers)

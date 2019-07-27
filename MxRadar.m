@@ -89,10 +89,12 @@ isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 isPickTravelTimeHorizons = 0;  % Pick Travel-Time Horizons
 isLoadIRH = 1;                 % Load Previously Picked IRHs
 isPickAgeHorizons = 0;         % Pick Age Horizons
+isLoadDepthHorizons = 1;       % Load Previously Picked Depth Horizons
+isPickDepthHorizons = 0;       % Pick Isochronous Depth Horizons
 isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 1;                 % Load GPS for MxRadar
-isGreenTracsFirnCore = 0;      % Load GreenTracs Firn Core Data
+isGreenTracsFirnCore = 1;      % Load GreenTracs Firn Core Data
 isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 
 % Export Data
@@ -101,7 +103,7 @@ isSaveHVA = 0;          % Save Horizon Velocity Analysis
 isSaveMxHL = 0;         % Save Modeled Output
 
 % Process Data
-isReduceData = 1;       % Remove Every n Traces from Data Gather
+isReduceData = 1;       % Remove Every nth Trace from Data Gather
 isTrimTWT = 0;          % Truncate Recorded Data for Near-Surface Analysis
 isKill = 1;             % Kill Unanted Channels
 isMedianSubtraction = 1;% Background Median Subtraction Filter
@@ -206,7 +208,6 @@ directRadar = Radar;
 
     if isLoadTimeHorizons
 
-%         TimeHorizonFilename = '6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat';
         TimeHorizonFilename = 'Core15SpurWCompleteTimeHorizon.mat';
 
         load(TimeHorizonFilename);
@@ -283,7 +284,13 @@ if isSWEDISH && ~isLoadHVA
     
     % Run Horizon Velocity Analysis
     HorizonVelocityAnalysis
-
+elseif isGreenTracsFirnCore
+    isCoreDepthAge = 1; % Use Age Depth Profile from Local Core Site
+    coreNo = [15]; % Array of Firn Cores 1-16 to include in analysis
+    depthAgeFilename = 'Core15_age_scale.txt';
+    
+    % Annual Accumulation Correction from Firn Core Chemistry [mwe]
+    GreenTracsFirnCore
 end   
 %% Apply Residual Trace Shifts to Data Gathers
 if isSWEDISH || isLoadHVA && ~isLoadMxHL
@@ -330,15 +337,6 @@ if isDepthSection && ~isLoadMxHL
     fprintf('Stacking Done \n')
     toc
     display(' ')
-    %% Time to Depth Conversion
-    fprintf('Begin Time-Depth Conversion \n')
-    tic
-    
-    TimeToDepthConversion
-    
-    fprintf('Time-Depth Conversion Done \n')
-    toc
-    display(' ')
     %% Post-Stack FX-Deconvolution
     isPostStackFXdecon = 0;
     if isPostStackFXdecon
@@ -355,6 +353,18 @@ if isDepthSection && ~isLoadMxHL
         toc
         display(' ')
     end
+    %% Time to Depth Conversion
+    isTime2Depth = 0;
+    if isTime2Depth
+    fprintf('Begin Time-Depth Conversion \n')
+    tic
+    
+    TimeToDepthConversion
+    
+    fprintf('Time-Depth Conversion Done \n')
+    toc
+    display(' ')
+    end
     %% Resize Density Model
     fprintf('Begin Regrid of MxHL Model \n')
     tic
@@ -364,13 +374,13 @@ if isDepthSection && ~isLoadMxHL
     fprintf('MxHL Model Regrid Done \n')
     toc
     display(' ')
-    %% Radar Depth to Deposition Time Image
-    fprintf('Begin Depth-Deposition Conversion \n')
+    %% Radar Time to Stratigraphic Age Image
+    fprintf('Begin Time-Age Conversion \n')
     tic
     
-    DepthToDepositionConversion
+    TimeToAgeConversion
 
-    fprintf('Depth-Deposition Image Done \n')
+    fprintf('Time-Age Conversion Done \n')
     toc
     display(' ')
     
@@ -382,9 +392,11 @@ if isDepthSection && ~isLoadMxHL
         PickAgeHorizons
         
         % Write Isochrone Picks to .mat
-        isWriteIRH = 0;
+        isWriteIRH =0;
         if isWriteIRH
-            save('isochronePicksCore15SpurW062319.mat','isochronePick','ageResidual','datumAge','-v7.3')
+            cd '/home/tatemeehan/GreenTracs2017/MXHL';
+            save('isochronePicksCore15SpurW072319.mat','isochronePick','-v7.3')
+            cd(workDir)
         end
         
         fprintf('Depth-Deposition Picking Done \n')
@@ -393,10 +405,8 @@ if isDepthSection && ~isLoadMxHL
         
     elseif isLoadIRH
         cd '/home/tatemeehan/GreenTracs2017/MXHL';
-        IRH = load('isochronePicksCore15SpurW062319.mat');
+        IRH = load('isochronePicksCore15SpurW070719.mat');
         isochronePick = IRH.isochronePick;
-        ageResidual = IRH.ageResidual;
-        datumAge = IRH.datumAge;
         clear IRH
         cd(workDir)
         fprintf('Isochrone Reflection Horizon Picks Loaded \n')
@@ -407,7 +417,9 @@ if isDepthSection && ~isLoadMxHL
     if isPickAgeHorizons || isLoadIRH
         fprintf('Begin Isochrone Model Update & Trace Flattening \n')
         tic
-        
+        % Calculate Stratigraphic Age Residual
+        CalculateAgeResidual
+        % Update Model with Perturbations
         UpdateAgeHorizons
         
         fprintf('Isochrone Model Update & Trace Flattening Done \n')
@@ -442,203 +454,62 @@ if isDepthSection && ~isLoadMxHL
         display(' ')
     end
     
-    %% Radar Deposition Time to Depth Image
-    fprintf('Begin Deposition-Depth Conversion \n')
+    %% Radar Stratigraphic Age to Depth Image
+    fprintf('Begin Age-Depth Conversion \n')
     tic
-    
-    DepositionToDepthInversion
+      AgeToDepthConversion
 
-    fprintf('Deposition-Depth Image Done \n')
+    fprintf('Age-Depth Image Done \n')
     toc
     display(' ')
-    end
-    %% Plot Wiggle OverLay Velocity
-if isLoadMxHL
-    MxHLFilename = 'GTC15SpurWMxHL.mat';
-    % Load MxHL structure
-    load(MxHLFilename);
-    % Write Unpacked Structure Variables to .m file
-    structvars(GTC15SpurWMxHL);
-    % Run .m to Evaluate structvars
-    tmpvars
-    delete tmpvars.m
-    clear GTC15SpurWMxHL
 end
-if isDepthSection
-
-    for ii = 1:nFiles
-        %Create Transparancy Mask
-        WiggleAlpha = sign(RadarDepth{ii}); WiggleAlpha(WiggleAlpha<0) = 0;
-        WiggleAlpha = conv2(WiggleAlpha,triang(3),'same')./sum(triang(3));
-        WiggleAlpha = WiggleAlpha.*(tukeywin(size(WiggleAlpha,1),.09).*ones(1,size(WiggleAlpha,2)));
-        WiggleAlpha(WiggleAlpha<1) = 0;
-        % Plot Density, Overlay Peak Amplitudes
-        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityModel{ii});colormap(yet_white);freezeColors;hold on;
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[310,350,400,450,500,550,600,625]);
-        set(get(hlay,'ylabel'),'String','Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        title('Density Tomogram')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')
-        set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
-        
-        % Plot Density Anamoly, Overlay Peak Amplitudes
-%         figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
-% %         plot(Traverse{ii},depth550,'--k','linewidth',3);
-%         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-% %         colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
-%         colormap(colorbrew);hlay = colorbar;
-        figure();
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(colorbrew);hlay = colorbar;
-        set(get(hlay,'ylabel'),'String','Deviation from Mean Density [kg/m^{3}]', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        title('Density Anomaly')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')
-        set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
-        
-        figure();
-        hDA1 = subplot(2,1,1);
-        % Plot Mean Average Density Deviation
-%         plot(Traverse{ii},1000.*MeanDensityDeviation{ii},'k','linewidth',3)
-%         title('Mean Average Deviation - Density [kg/m^{3}]')
-        % Plot Surface Density Deviation
-        plot(Traverse{ii}./1000,1000.*SurfaceDensityDeviation{ii},'k','linewidth',3)
-        title('Surface Density - Deviation from Mean (kg/m^{3})')
-        grid on
-        set(gca,'fontsize',14,'fontweight','bold')
-%         set(hDA1,'units','normalized')
-%         hDA1pos = get(hDA1,'Position');
-%         set(hDA1,'position',[hDA1pos(1),hDA1pos(2)+.25, hDA1pos(3), hDA1pos(2)-.25])
-        
-        hDA2 = subplot(2,1,2);
-        % Plot Density Anamoly, Overlay Peak Amplitudes
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},1000.*DensityAnomalyModel{ii});colormap(colorbrew);caxis([-15,15]);freezeColors;hold on;
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(colorbrew);hlay = colorbar;
-%         colormap(SplitJet);hlay = colorbar; %set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold');
-        set(get(hlay,'ylabel'),'String','Deviation from Mean Density (kg/m^{3})', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        title('Density Anomaly')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')
-        set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
-        
-        % Plot Depth-Age Tomography
-        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AgeModel{ii});colormap(yet_white);freezeColors;hold on;
-        imagesc(Traverse{ii}./1000,DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(yet_white);hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[Ages{ii}]);
-        for kk = 1:size(DepthAge{ii},2)
-        plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'k','linewidth',3)
-        end
-        set(get(hlay,'ylabel'),'String','Age (a)', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        set(gca,'YTick',[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5])
-        title('Isochronogram')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')            
-  
-    end
-    %% Image Depth Section
-    for ii = 1:nFiles
-%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-%         figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(5),2));
-%         colormap(cmapAdapt(RadarDepth{ii},colorbrew));hold on;
- figure();imagesc(Traverse{ii}./1000,DepositionAxis{ii},AGCgain(RadarDeposition{ii},size(RadarDeposition{ii},1)./round(5),2));
-        colormap(cmapAdapt(RadarDeposition{ii},colorbrew));hold on;
-%         for kk = 1:size(DepthAge{ii},2)
-%             plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'color',c3,'linewidth',2)
-%         end
-%         for kk = 1:size(DepthAge{ii},2)
-%         plot(Traverse{ii},DepthAge{ii}(:,kk),'k','linewidth',3)
-%         end
-%         title('Core 15 Spur West - Depth Section')
-        title('Core 15 Spur West - Age Section')
-
-        xlabel('Distance (km)')
-%         ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        ylabel('age (a)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')
-        
-
-        
-        % Plot RadarGram with Isochrones
-%         figure();imagesc(Traverse{ii},DepthAxis{ii},RadarDepth{ii});
-        figure();imagesc(Traverse{ii}./1000,DepthAxis{ii},AGCgain(RadarDepth{ii},size(RadarDepth{ii},1)./round(3.5),2));
-        colormap(cmapAdapt(RadarDepth{ii},colorbrew));hold on;
-        for kk = 1:size(DepthAge{ii},2)
-        plot(linspace(Traverse{ii}(1)./1000,Traverse{ii}(end)./1000,length(Traverse{ii})),DepthAge{ii}(:,kk),'color',c3,'linewidth',2)
-        end
-        
-        % Compare Time to Depth Images
-        compareIx = 7550:11500;
-        compareIy = 165:565;
-        % Salt and Pepper Time Image
-        figure();
-%         subplot(2,1,1)
-     imagesc(Traverse{ii}(:)./1000,tStack{ii}(:,1),AGCgain(RadarNMO{8}(:,:),size(Radar{ii}(:,:),1)./round(3.5),2));
-        colormap(cmapAdapt(Radar{4}(compareIy,compareIx),colorbrew));hold on;
-%         imagesc(Traverse{ii}(compareIx)./1000,tStack{ii}(compareIy,1),AGCgain(RadarNMO{8}(compareIy,compareIx),size(Radar{ii}(compareIy,compareIx),1)./round(3.5),2));
-%         colormap(cmapAdapt(Radar{4}(compareIy,compareIx),colorbrew));hold on;
-%         title('Core 15 Spur West - Time Section')
-        title('Time Section')
-        xlabel('Distance (km)')
-        ylabel('Travel-Time (ns)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold')
-                daspect([1 9.5 1])
-
-%         axis square
-        compareIy = 150:550;
-        % Bread and Butter Depth Image
-        figure();
-%         subplot(2,1,2)
-%         imagesc(Traverse{ii}(compareIx)./1000,DepositionAxis{ii}(compareIy),AGCgain(RadarDeposition{ii}(compareIy,compareIx),size(RadarDepth{ii}(compareIy,compareIx),1)./round(3.5),2));
-        imagesc(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AGCgain(RadarDepth{ii}(compareIy,compareIx),size(RadarDepth{ii}(compareIy,compareIx),1)./round(3.5),2));
-        colormap(cmapAdapt(RadarDepth{ii}(compareIy,compareIx),colorbrew));hold on;
-        title('Core 15 Spur West - Depth Section')
-%         title('Core 15 Spur West - Age Section')
-
-%         title('Depth Section')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-%         ylabel('Age (a)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
-
-        set(gca,'fontsize',14,'fontweight','bold')
-        daspect([1 1 1])
-%         daspect([1 2 1])
-
-        text(.65,-.25,'1000x Vertical Exaggeration','units','normalized','fontsize',10,'fontweight','bold')
-%         axis square
-
- 
-        % Plot Depth-Age Tomography
-        figure();imagesc(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AgeModel{ii}(compareIy,compareIx));colormap(yet_black);freezeColors;hold on;
-%         imagesc(Traverse{ii},DepthAxis{ii},sign(RadarDepth{ii}),'AlphaData',WiggleAlpha);colormap([0,0,0]);freezeColors;
-        colormap(yet_white);%hlay = colorbar; set(hlay,'YDir','reverse','fontsize',14,'fontweight','bold','Ticks',[5.5:5:20.5],'TickLabels',[2012,2007,2002,1997]);
-%         for kk = 1:size(DepthAge{ii},2)
-%         plot(Traverse{ii}(compareIx)./1000,DepthAge{ii}(compareIx,kk),'k','linewidth',1.5)
-%         end
-          contour(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),AgeModel{ii}(compareIy,compareIx),5:5:15,'k','linewidth',1.5)
-%         set(get(hlay,'ylabel'),'String','Age (a)', 'rotation', 270,'Units', 'Normalized', 'Position', [4, 0.5, 0])
-        set(gca,'YTick',[4,6,8,10])
-%         title('Core 15 Spur West - Age-Depth Section')
-                title('Age-Depth Section')
-        xlabel('Distance (km)')
-        ylabel('Depth (m)','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
-        set(gca,'fontsize',14,'fontweight','bold') 
-        daspect([1 1 1])
-        text(.65,-.25,'1000x Vertical Exaggeration','units','normalized','fontsize',10,'fontweight','bold')
-        
+%% PickAge Horizons for Residual Update
+if isPickDepthHorizons
+    fprintf('Begin Picking Depth Image \n')
+    tic
+    
+    PickDepthHorizons
+    
+    % Write Isochrone Picks to .mat
+    isWriteDepthHorizons = 0;
+    if isWriteDepthHorizons
+        cd '/home/tatemeehan/GreenTracs2017/MXHL';
+        save('depthPicksCore15SpurMaster.mat','depthPick','-v7.3')
+        cd(workDir)
     end
     
+    fprintf('Depth Domain Isochrone Picking Done \n')
+    toc
+    display(' ')
+    
+elseif isLoadDepthHorizons
+    cd '/home/tatemeehan/GreenTracs2017/MXHL';
+    IRH = load('depthPicksCore15SpurMaster.mat');
+    depthPick = [IRH.depthPick];
+    clear IRH
+    cd(workDir)
+    fprintf('Isochrone Reflection Horizon Picks Loaded \n')
+    disp(' ')
 end
+    
+    %% Isochrone Model Update and Trace Flattening
+%     if isPickDepthHorizons || isLoadDepthHorizons
+%         fprintf('Begin Isochrone Model Update & Trace Flattening \n')
+%         tic
+%         % Calculate Stratigraphic Age Residual
+        ReCalculateAgeResidual
+%         % Update Model with Perturbations
+%         UpdateAgeHorizons
+%         
+%         fprintf('Isochrone Model Update & Trace Flattening Done \n')
+%         toc
+%         display(' ')
+%     end
+
 %% Save HVA Output
 if isSaveHVA
     % Save Rough Results
-    HVAfilename = 'Core15SpurWHVA_061919.mat';
+    HVAfilename = 'Core15SpurWHVA_070819.mat';
     save(HVAfilename,'AirTo','DirectTo','DirectToVar','deltaT',...
     'DirectVelocity','DirectVelocityVar','DirectDepth','DirectDepthVar',...
     'DirectDensity','DirectDensityVar','CovarianceDepthDensityDirect',...
@@ -688,159 +559,6 @@ cd(workDir)
         save(MxHLFilename,'-struct','GTC15SpurWMxHL','-v7.3');
 
     end
-%% Create Figures for Snow Surface Data
-if isSWEDISH
-    % plot Direct Wave Data
-    for ii = 1:nFiles
-        figure();
-        subplot(3,1,1)
-        for dh = 2:nDirectHorizon
-            shadedErrorBarT8([],dhSnowWaterEqv{dh,ii},...
-                sqrt(dhSnowWaterEqvVar{dh,ii}),1,{'Color',[0.5,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Accumulation [m w.e.]')
-        subplot(3,1,2)
-        for dh = 2:nDirectHorizon
-            shadedErrorBarT8([],dhDensity{dh,ii}.*1000,...
-                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,.5],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Average Density [kg/m^{3}]')
-        subplot(3,1,3)
-        for dh = 2:nDirectHorizon
-            shadedErrorBarT8([],dhDepth{dh,ii},...
-                sqrt(dhDepthVar{dh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Depth [m]')
-        set(findobj(gcf,'type','axes'),'FontName','Arial','FontSize',12,...
-            'FontWeight','Bold', 'LineWidth', 1);
-    end
-    % Plot Reflection Data
-    for ii = 1:nFiles
-        figure();
-        subplot(3,1,1)
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(Traverse{ii}./1000,SnowWaterEqv{rh,ii},...
-                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',c1,'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Average Annual Accumulation [m w.e. a^{-1}]')
-        subplot(3,1,2)
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(Traverse{ii}./1000,Density{rh,ii}.*1000,...
-                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Average Snow Density [kg/m^{3}]')
-        subplot(3,1,3)
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(Traverse{ii}./1000,Depth{rh,ii},...
-                sqrt(DepthVar{rh,ii}),1,{'Color',c3,'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        title('Snow Depth [m]')
-        xlabel('Distance [km]')
-        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
-            'FontWeight','Bold', 'LineWidth', 1);
-    end
-end
-%% Joint Figure for Snow Surface Data
-if isSWEDISH
-    % plot Direct Wave Data
-    for ii = 1:nFiles
-        distance = Traverse{ii};
-        figure();
-        subplot(3,1,1)
-%         for dh = 2:nDirectHorizon
-%             shadedErrorBarT8(distance,dhDepth{dh,ii},...
-%                 sqrt(dhDepthVar{dh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
-%             hold on;
-%         end
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance./1000,Depth{rh,ii},...
-                sqrt(DepthVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-
-%                 sqrt(DepthVar{rh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
-
-            hold on;
-        end
-        freezeColors
-        axis ij
-        axis tight
-        grid on
-        ylim([1.6 2.2])
-        set(gca,'ytick',[1.6,1.8,2.0,2.2])
-        set(gca,'xticklabel',[])
-        title('Snow Depth (m)')
-        subplot(3,1,2)
-        for dh = 2:nDirectHorizon
-            shadedErrorBarT8(distance,dhDensity{dh,ii}.*1000,...
-                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
-%                 sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
-            hold on;
-        end
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance,Density{rh,ii}.*1000,...
-                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
-%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis ij
-        axis tight
-        grid on
-        set(gca,'xticklabel',[])
-        set(gca,'ytick',[350,375,400])
-        title('Average Density (kg/m^{3})')
-        subplot(3,1,3)
-%         for dh = 2:nDirectHorizon
-%             shadedErrorBarT8(distance,dhSnowWaterEqv{dh,ii},...
-%                 sqrt(dhSnowWaterEqvVar{dh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-%             hold on;
-%         end
-        for rh = 1:nReflectionHorizon
-            shadedErrorBarT8(distance,AverageAccumulation{ii},...
-                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});            
-%             shadedErrorBarT8(distance,SnowWaterEqv{rh,ii},...
-%                 sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
-            hold on;
-        end
-        freezeColors
-        axis tight
-        axis ij
-        grid on
-        set(gca,'ytick',[0.24,0.27,0.3,0.33])
-        title('Average Annual Accumulation (m w.e. a^{-1})')
-        set(gca,'xtick',1000.*[0, 20, 40, 60, 78])
-        set(gca,'xticklabel',[0,20,40,60,78])
-        xlabel('Distance (km)')
-        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
-            'FontWeight','Bold', 'LineWidth', 1);
-    end
-end
+    
+%% Radar Imagery and Snow Data Visualization
+MakeFigures

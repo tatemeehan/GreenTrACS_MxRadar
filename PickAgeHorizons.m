@@ -11,20 +11,16 @@
     
         % AGC Gain for PolarPicker 
     for ii = 1:nFiles
-%         parfor (jj = chan, nWorkers)
             ageRadar{ii} = AGCgain(ageRadar{ii},350,2);
-%         end
     end
     
     % Plot Common-offset gathers
-    isPlotOffsetGathers = 0;
-    if isPlotOffsetGathers
+    isPlotAgeGather = 0;
+    if isPlotAgeGather
         for ii = 1:nFiles
-            for jj = chan
+            for jj = 1:length(RadarStack)
                 figure();
-                    imagesc(ageRadar{jj,ii});colormap(colorbrew);
-%                 figure(chan(jj)+(ii-1).*length(chan)+200);...
-%                     imagesc(directRadar{jj,ii});colormap(LateNite);
+                    imagesc(ageRadar{jj,ii});colormap(cmapAdapt(ageRadar{jj,ii},colorbrew));
             end
         end
         
@@ -38,35 +34,8 @@
     % Pick Isochrones
     display('Pick Isochrones')
     display(' ')
-    display('Isochronous Horizons Must be Picked Sequenctially in Time!')
+    display('Isochronous Horizons Must be Picked Sequentially in Time!')
     display(' ')
     [~, isochronePick] = polarPickerT8(ageRadar);
     
-    clear ageRadar
-    
-    % Determine Number of Age Horizons
-    nAgeHorizon = size(isochronePick,2);
-    
-    % Calculate Residual
-    ageResidual = isochronePick;
-    datumAge = zeros(nAgeHorizon,nFiles);
-    warning('off','MATLAB:mir_warning_changing_try_catch');
-    try iceCoreIx;
-    catch
-        iceCoreIx = 1:100;
-    end
-        
-    for ii = 1:nFiles
-        dAge = mean(diff(DepositionAxis{ii}));
-        for jj = 1;% chan (Loop over chan for Mx processing)
-            for ah = 1:nAgeHorizon
-                % Convert Samples to Age
-                isochronePick{jj,ah,ii} = isochronePick{jj,ah,ii}.*dAge;
-                % Determine Measurement Datum
-                [~,datumIx] = min(abs(mean(isochronePick{jj,ah,ii}(iceCoreIx))-DepositionAxis{ii}));
-                datumAge(ah,ii) = DepositionAxis{ii}(datumIx);
-                % Calculate Misfit
-                ageResidual{jj,ah,ii} = isochronePick{jj,ah,ii} - datumAge(ah,ii);
-            end
-        end
-    end
+    clear ageRadar isPlotAgeGather

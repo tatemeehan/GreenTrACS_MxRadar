@@ -69,8 +69,9 @@
             % radar estimates are tranfered to ice core accumulation 
             if isGreenTracsFirnCore
                 % Correct Accumulation to 30 year mean
-            accuHL = coreAccumulation(1) + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
-                mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
+%             accuHL = coreAccumulation(1) + (SnowWaterEqv{1,iceCoreFileIx}(jj) - ...
+%                 mean(SnowWaterEqv{1,iceCoreFileIx}(iceCoreIx)));
+                accuHL = SnowWaterEqv{1,iceCoreFileIx}(jj);
             else
                 % Use aproximation that past 2.5 years represents mean
                 iceCoreFileIx = 1;
@@ -124,18 +125,19 @@
             StackingTime{ii}(:,jj) = 2.*StackZ./StackingVelocity{ii}(:,jj);
                       
         end
+        %%% Residual Corrections are Now Applied in UpdateAgeHorizons.m
         % Apply Correction to Interannual Isochrone Depths
-        if isGreenTracsFirnCore
-            % Currently works for 1 Firn Core in Analysis
-            % Shift from Calendar Years to Ages
-            tmp1 = abs(GTCdepthAge(1,2)-GTCdepthAge(:,2)); 
-            % Extract Age-Depth Model Near Firn Core and Average
-            tmp2 = mean(HerronLangwayAge{ii}(:,iceCoreIx(ii,:)),2);
-            % Compute Residual (Observed - Estimated)
-            isochroneResidual(:,ii) = tmp1-tmp2;
-            % Update Model Positive is Downwards so Residual should be Added
-            HerronLangwayAge{ii} = HerronLangwayAge{ii} + isochroneResidual(:,ii);
-            % Remove any Numerical Bias
-            HerronLangwayAge{ii}(1,:) = zeros(1,size(HerronLangwayAge{ii}(1,:),2));
-        end
+%         if isGreenTracsFirnCore
+%             % Currently works for 1 Firn Core in Analysis
+%             % Shift from Calendar Years to Ages
+%             tmp1 = abs(GTCdepthAge(1,2)-GTCdepthAge(:,2)); 
+%             % Extract Age-Depth Model Near Firn Core and Average
+%             tmp2 = mean(HerronLangwayAge{ii}(:,iceCoreIx(ii,:)),2);
+%             % Compute Residual (Observed - Estimated)
+%             isochroneResidual(:,ii) = tmp1-tmp2;
+%             % Update Model Positive is Downwards so Residual should be Added
+%             HerronLangwayAge{ii} = HerronLangwayAge{ii} + isochroneResidual(:,ii);
+%             % Remove any Numerical Bias
+%             HerronLangwayAge{ii}(1,:) = zeros(1,size(HerronLangwayAge{ii}(1,:),2));
+%         end
     end
