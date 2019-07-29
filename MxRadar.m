@@ -443,16 +443,16 @@ if isDepthSection && ~isLoadMxHL
     end
     
     %% Isochrone Model Update and Trace Flattening
-    if isPickAgeHorizons || isLoadIRH
-        fprintf('Begin Trace Unflattening \n')
-        tic
-        
-        DepositionUnflattening
-        
-        fprintf('Trace Unflattening Done \n')
-        toc
-        display(' ')
-    end
+%     if isPickAgeHorizons || isLoadIRH
+%         fprintf('Begin Trace Unflattening \n')
+%         tic
+%         
+%         DepositionUnflattening
+%         
+%         fprintf('Trace Unflattening Done \n')
+%         toc
+%         display(' ')
+%     end
     
     %% Radar Stratigraphic Age to Depth Image
     fprintf('Begin Age-Depth Conversion \n')
@@ -474,7 +474,7 @@ if isPickDepthHorizons
     isWriteDepthHorizons = 0;
     if isWriteDepthHorizons
         cd '/home/tatemeehan/GreenTracs2017/MXHL';
-        save('depthPicksCore15SpurMaster.mat','depthPick','-v7.3')
+        save('depthPicksCore15SpurMaster072919.mat','depthPick','-v7.3')
         cd(workDir)
     end
     
@@ -484,7 +484,7 @@ if isPickDepthHorizons
     
 elseif isLoadDepthHorizons
     cd '/home/tatemeehan/GreenTracs2017/MXHL';
-    IRH = load('depthPicksCore15SpurMaster.mat');
+    IRH = load('depthPicksCore15SpurMaster072919.mat');
     depthPick = [IRH.depthPick];
     clear IRH
     cd(workDir)
