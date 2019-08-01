@@ -112,7 +112,18 @@ for ii = 1:nFiles
 
         AverageAccumulation3{ii} = reportAccum;
         varAccumulation3{ii} = varAccum;
-        clear('reportAccum','varAccum',m,n);
+        % Calculate Experimental Confidence Region
+        confidance = zeros(n,1);
+        for kk = 1:n
+            if AverageAccumulation3{ii}(kk) > AverageAccumulation{ii}(kk)+sqrt(SnowWaterEqvVar{1,ii}(kk))
+                confidance(kk) = 1;
+            elseif AverageAccumulation3{ii}(kk) < AverageAccumulation{ii}(kk)-sqrt(SnowWaterEqvVar{1,ii}(kk))
+                confidance(kk) = 1;
+            end
+        end
+            confidanceIx = find(confidance);
+       CI = 1 - (length(confidanceIx)./length(AverageAccumulation3{ii}));
+       clear('reportAccum','varAccum','m','n');
     end
     clear ('tmp','tmpA','tmZ','datumIx','isConvert','tmpIx','tmpResidual');%,'isochroneDepth','GTCageDepth',
 end

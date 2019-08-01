@@ -246,8 +246,8 @@ if isDepthSection
         tmpResidual = perturbations(compareIy,compareIx);%updatePseudoAgeModel{ii}(compareIy,compareIx)-pseudoAgeModel{ii}(compareIy,compareIx);
         figure();
         pcolor(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),tmpResidual);
-        shading interp; axis ij;caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
-        colormap(SplitJet)
+        shading interp; axis ij;%caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
+        colormap(cmapAdapt(tmpResidual,SplitJet))
 %         freezeColors;
         c = colorbar; c.Location = 'northoutside';c.Label.String = 'Age Perturbations (\Delta a)';
         c.FontSize = 12; c.Label.FontSize = 16;

@@ -13,7 +13,8 @@ RadarDepth = RadarDeposition;
 %         DepositAxe = [linspace(min(DepositAxe),max(DepositAxe),q.*length(DepositAxe))]';
         zStak = zStack{ii};
         tStak = tStack{ii};
-        tmpModel = pseudoAgeModel{ii};
+%         tmpModel = pseudoAgeModel{ii};
+        tmpModel = updatePseudoAgeModel{ii};
         % Interpolation Axes
         AxZ = linspace(min(zStak(:)),max(zStak(:)),m);
         % Axis for Deposition Image
