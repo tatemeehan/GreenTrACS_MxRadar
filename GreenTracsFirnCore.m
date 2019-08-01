@@ -50,6 +50,8 @@ end
 %% Interpolate Depth-Age Scale to Model Resolution
 % Append Snow Surface Date to Age Record
 GTCza = [0,str2num(Year{1})+dayofyear/365;GTCza];
+GTCaz = fliplr(GTCza);
+
 
 % Array of Model Depths
 maxDepth = max(GTCza(:,1));
@@ -62,6 +64,7 @@ tmpZ = (linspace(0.001,modDepth,nDepth))';
 [~, xstrapIx] = min(abs(tmpZ-maxDepth));
 
 % Interpolate Age-Depth Scale
+% depthAge : Depth is the linear Axis!
 GTCdepthAge = pchip(GTCza(:,1),GTCza(:,2),tmpZ(1:xstrapIx-1));
 
 % Extrapolate Age-Depth with Linear Model 
@@ -78,7 +81,7 @@ m = G\d;
 % Extrapolate Ages to 30 m
 GTCdepthAge = [GTCdepthAge;m(2).*tmpZ(xstrapIx:end)+m(1)];
 GTCdepthAge = [tmpZ,GTCdepthAge];
-clear('modIx','G','m','d','xstrapIx','GTCza','tmpZ','nDepth',...
+clear('modIx','G','m','d','xstrapIx','tmpZ','nDepth','GTCza',...
     'maxAge','maxDepth','modDepth','depthAgeFilename')
 
 %% Load GreenTrACS Accumulation Record

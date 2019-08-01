@@ -78,7 +78,7 @@ t = tzcurve(:,1);
 
 %input trace must be regularly sampled
 if(sum(abs(diff(diff(t))))>.00001)
-    error('input time trace must be sampled regularly');
+%     error('input time trace must be sampled regularly');
 end
 
 
@@ -321,9 +321,9 @@ end
 if(nargin<5)
     m=2;
 end
-if(sum(abs(diff(diff(t))))>1000000*eps)
-    error('input times must fall on a regular grid')
-end
+% if(sum(abs(diff(diff(t))))>1000000*eps)
+%     error('input times must fall on a regular grid')
+% end
 
 if(t(1)~=0)
     t1=t(1);

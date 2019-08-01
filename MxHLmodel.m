@@ -6,8 +6,10 @@
     AgeModel = cell(nFiles,1);
     Ages = cell(nFiles,1);
     DensityModel = cell(nFiles,1);
+    InstantVelocityModel = cell(nFiles,1);
     DensityAnomalyModel = cell(nFiles,1);
     AvgDensityModel = cell(nFiles,1);
+    StackingVelocityModel = cell(nFiles,1);
     MeanDensityDeviation = cell(nFiles,1);
     SurfaceDensityDeviation = cell(nFiles,1);
     DepthAge = cell(nFiles,1);
@@ -22,18 +24,23 @@
             HerronLangwayDensity{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Nearest Extrapolation
         DensityModel{ii}(1,:) = DensityModel{ii}(2,:);
+        % Compute Instantaneous Velocity Model
+        InstantVelocityModel{ii} = DryCrimVRMS(DensityModel{ii});
         
         % Resize Depth-AvgDensity Model
         AvgDensityModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             StackingDensity{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Nearest Extrapolation
-        AvgDensityModel{ii}(1,:) = AvgDensityModel{ii}(2,:);        
+        AvgDensityModel{ii}(1,:) = AvgDensityModel{ii}(2,:);
+        % Compute Resized Stacking Velocities
+        StackingVelocityModel{ii} = DryCrimVRMS(AvgDensityModel{ii});
         
         % Resize Depth-Age Model
         AgeModel{ii} = griddata(TraverseX{ii},StackDepth{ii},...
             HerronLangwayAge{ii},xStack{ii},DepthMatrix{ii},'linear');
         % Fill in NaN with Zero Age
         AgeModel{ii}(1,:) = 0;
+
         % Determine Critical Depth 
         for kk = 1:size(DensityModel{ii},2)
             ix550(kk) = find(DensityModel{ii}(:,kk)>.550,1);
@@ -49,7 +56,8 @@
         % Calculate Accumulation Rate from Maximum Isochrone to Surface
         
         MaxAge = floor(min(AgeModel{ii}(end,:)));
-        Ages{ii} = [1:5:MaxAge];
+%         Ages{ii} = [1:5:MaxAge];
+        Ages{ii} = [5:5:20];
         Isochrones = abs(str2num(Year{ii}) - Ages{ii});
         for kk = 1:length(Isochrones)
         [~, AgeIx] = min(abs(AgeModel{ii}-Ages{ii}(kk)));

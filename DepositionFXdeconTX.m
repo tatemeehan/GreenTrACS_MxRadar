@@ -1,8 +1,8 @@
     if isDepthFXdecon
     % Spatial Predictive Filtering for Random Noise Suression
-    Window = 2/dt; % Number of Temporal Samples in Fx-Decon Window Per Computation
-    Overlap = round(Window/2); % Number of Overlapping Computations
-    mu = 1e5; % Weighting
+    Window = 20/dt; % Number of Temporal Samples in Fx-Decon Window Per Computation
+    Overlap = round(Window/10); % Number of Overlapping Computations
+    mu = 1e7; % Weighting
     nfR = 50; % Length of Deconvolution Filter
     fxProRadar = cell(nFiles,1); % Allocation
     
@@ -47,6 +47,11 @@
                 RadarDeposition{ii}(kk,:) = mean(fxRadar{ii}(find(fxCatRadar{ii}{2}==kk),:),1);
             end
 %         end
+            % Replace NaN with Zero (Bottom of Image has zero frequency Content)
+            nanIx = find(isnan(RadarDeposition{ii}));
+            RadarDeposition{ii}(nanIx) = 0;
+            % Normalize Image
+            RadarDeposition{ii} = trcNormalize(RadarDeposition{ii});
     end
     clear('fxCatRadar','fxProRadar','fxRadar','stackIx')
     end
@@ -102,9 +107,12 @@
                     RadarDeposition{ii}(:,kk) = mean(fxRadar{ii}(:,find(fxCatRadar{ii}{2}==kk)),2);
                 end
 %             end
+            % Replace NaN with Zero (Bottom of Image has zero frequency Content)
+            nanIx = find(isnan(RadarDeposition{ii}));
+            RadarDeposition{ii}(nanIx) = 0;
+            % Normalize Image
+            RadarDeposition{ii} = trcNormalize(RadarDeposition{ii});
 
         end
         clear('fxCatRadar','fxProRadar','fxRadar','out','stackIx')
     end
-       % Normalize Image
-        RadarDeposition{ii} = trcNormalize(RadarDeposition{ii});

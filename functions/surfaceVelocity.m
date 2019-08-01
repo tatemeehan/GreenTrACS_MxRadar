@@ -26,16 +26,20 @@ Vx(nanIx) = NaN;
 Vy(nanIx) = NaN;
 % Store Array Size
 [ny, nx] = size(Vx);
-ntrc = size(trhd,2);
 % Extract Grid Axes - NSIDC Sea Ice Polar Stereographic North Projection
 dX = GeoLoc.XWorldLimits; dY = GeoLoc.YWorldLimits;
 X = linspace(dX(1),dX(2),nx); Y = fliplr(linspace(dY(1),dY(2),ny));
 % Read Radar Array GPS from Trace Header
-Xgps = trhd(13,:);
-Ygps = trhd(14,:);
-heading = trhd(19,:);
+[~, ix] = unique(trhd(10,:));
+ix = sort(ix);
+Xgps = trhd(10,ix);
+Ygps = trhd(11,ix);
+heading = trhd(20,ix);
+
+ntrc = length(ix);
+
 % Search Velocity Grid for Radar Array Position
-Vix = zeros(1,ntrc);
+Vix = zeros(ntrc,1);
 if isempty(gcp('nocreate'))
     for ii = 1:ntrc
         [~,Xix] = min(abs(X-Xgps(ii)));
@@ -58,7 +62,7 @@ Vtheta = atan2d(Vx(Vix),Vy(Vix));
 Vtheta = Vtheta + (Vtheta < 0)*360;
 % Calculate Resultant Magnitude 
 % Direction of Ice Motion Relative to Array Direction
-dTheta = heading - Vtheta;
+dTheta = heading(:) - Vtheta;
 Vresult = Vmag.*cosd(dTheta);
 
 end
