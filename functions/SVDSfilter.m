@@ -1,4 +1,4 @@
-function [dataOut] = SVDSfilter(data,BPix)
+function [dataOut] = SVDSfilter(data,threshold,BPix)
 % SVDSfilter performs an economical decomposition of the GPR data. Using
 % the bandpass method (Cagnoli and Ulrych 2001) coherent noise and clutter
 % in the form of eigenimages are removed from the data. The first 80
@@ -9,10 +9,14 @@ function [dataOut] = SVDSfilter(data,BPix)
 % Surpress Try Catch Warning
 id = 'MATLAB:mir_warning_changing_try_catch';
 warning('off',id);
+try threshold;
+catch
+    threshold = 0.5;
+end
 try BPix;
 catch
     % Set the Default Decomposition to 100 singular values
-    BPix = [0,100];
+    BPix = [1,100];
 end
 % [U,S,V] = svd(data);
 [U,S,V] = svds(data,BPix(2));
@@ -22,12 +26,15 @@ Sigma = diag(S);
 pca = Sigma./sum(Sigma);
 % The cumulative PCA  value determines the filter Low Cut
 % Coherent Noise is beleived to contribute between 25% - 50% of EigenImage
-if BPix(1) == 0
-    cumPCA = tril(ones(length(pca)))*pca;
-    BPix(1) = find(cumPCA >=0.5,1);
-end
+cumPCA = tril(ones(length(pca)))*pca;
+BPix(1) = find(cumPCA >=threshold,1);
+% Weight for Low Cut Eigenvalue > threshold
+w = (cumPCA(BPix(1)) - threshold)./threshold;
 % Kill the Largest Eigenvalues
-S(1:BPix(1),1:BPix(1)) = 0; 
+if BPix(1) > 1
+S(1:BPix(1)-1,1:BPix(1)-1) = 0; 
+end
+S(BPix(1),BPix(1)) = w;
 % Reconstruct the Data
 dataOut = U * S * V'; 
 end
