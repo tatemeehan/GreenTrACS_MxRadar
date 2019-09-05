@@ -3,7 +3,8 @@ function [dataOut] = SVDSfilter(data,threshold,BPix)
 % the bandpass method (Cagnoli and Ulrych 2001) coherent noise and clutter
 % in the form of eigenimages are removed from the data. The first 80
 % singular values are requested for a scalable SVD filter. The pass-band 
-% may be specified by the user, or will be determined by PCA.
+% may be specified by the user, or will be determined by PCA. The variable
+% threshold is between 0 and 1 and mutes singular values upto %PCA.
 %
 % Tate Meehan 12/4/2018
 % Surpress Try Catch Warning
