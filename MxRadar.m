@@ -252,6 +252,7 @@ if isSWEDISH && ~isLoadHVA
         isCoreDepthAge = 1; % Use Age Depth Profile from Local Core Site
         coreNo = [15]; % Array of Firn Cores 1-16 to include in analysis
         depthAgeFilename = 'Core15_age_scale.txt';
+        depthDensityFilename = 'Core15_depth_density.txt';
         
         % Annual Accumulation Correction from Firn Core Chemistry [mwe]
         GreenTracsFirnCore
@@ -541,7 +542,7 @@ end
 %         save('6-2-16-Core7-Spur-W-TimeHorizon.mat','DirectFBpick','ReflectionFBpick','-v7.3');
 %'6-12-17-Core15-Spur-W1-Surface-8chan-TimeHorizon.mat'
 cd '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save/matData'
-save('Core15SpurWCompleteTimeHorizon.mat','DirectFBpick','exportDirectTravelTimes',...
+save('Core15SpurW080219CompleteTimeHorizon.mat','DirectFBpick','exportDirectTravelTimes',...
     'ReflectionFBpick','exportReflectionTravelTimes','-v7.3');
 cd(workDir)
 

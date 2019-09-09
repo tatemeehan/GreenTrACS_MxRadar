@@ -18,11 +18,17 @@ if isCallbackHVA
 else
 %% Load 2-column format .txt [Lat, Lon; depth, year]
 GTCza = load(depthAgeFilename);
+GTCzp = load(depthDensityFilename);
 
 %% Extract GPS Location of Firn Core
 iceCoreLL = GTCza(1,:);
 iceCoreXY = ll2psn(iceCoreLL(1),iceCoreLL(2));
+if GTCzp(1,:) == GTCza(1,:)
 GTCza(1,:) = [];
+GTCzp(1,:) = [];
+else
+    error('Age and density data are not coloacted, or are in the wrong format. Check the supplemental data!');
+end
 
 % Extract Radar Measurments Nearest to Ice Core.
 if isLoadGPS
