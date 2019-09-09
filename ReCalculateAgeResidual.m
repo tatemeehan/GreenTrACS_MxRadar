@@ -81,19 +81,23 @@ for ii = 1:nFiles
         dUpdateAgeModel = [tmpDiff(1,:);tmpDiff]; % Colocation
         % Compute the Integrated Average Accumulation
         AverageAccumulationMatrix = (DepthMatrix{ii}.*AvgDensityModel{ii})./(bestAgeModel{ii}+eps);
-        % Compute dz/da for instantaneous accumulation
-        testInstant = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
+        % Compute dz/da for instantaneous accumulation rate
+        GTCdensity = interp1(GTCzp(:,1),GTCzp(:,2),DepthAxis{ii},'pchip');
+        GTCdensityModel = repmat(GTCdensity,1,n);
+        GTCaccum = (dUpdateAgeModel.*GTCdensityModel)./([tmpDiffA(1,:);tmpDiffA]);
+        instantAccum = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
         % Despike Mathy Noise
-        cutoff = quantile(testInstant(:),[.005,.995]);
-        tmpIx = find(testInstant<cutoff(1) | testInstant > cutoff(2));
-        testInstant(tmpIx) = NaN;
+        cutoff = quantile(instantAccum(:),[.005,.995]);
+        tmpIx = find(instantAccum<cutoff(1) | instantAccum > cutoff(2));
+        instantAccum(tmpIx) = NaN;
 %         testInstant = inpaint_nans(testInstant,0); % Quite Slow
-        testInstant = fillmissing(testInstant,'linear');
+        instantAccum = fillmissing(instantAccum,'linear');
         clear('cutoff','tmpIx')
         A1 = 2017; % Upper Year Bound
         % Lower Year Bound A2 = 1984
-        A2 = round(abs(max(datumDepthAge)-(str2num(Year{1})+dayofyear/365)));
-        tmpAccum = testInstant;
+        A2 = ceil(abs(max(datumDepthAge)-(str2num(Year{1})+dayofyear/365)));
+        Annuals = A2:A1;
+        tmpAccum = instantAccum;
         m = size(bestAgeModel{ii},1);
         n = size(bestAgeModel{ii},2);
         reportAccum = zeros(n,1);
@@ -102,13 +106,40 @@ for ii = 1:nFiles
             % Find indicies for Age Range A1 - A2
             ix = find(abs(bestAgeModel{ii}(:,kk)-(str2num(Year{1})+dayofyear/365)) < A1 ...
                 & abs(bestAgeModel{ii}(:,kk)-(str2num(Year{1})+dayofyear/365)) >= A2);
+            tmpAgeModel = bestAgeModel{ii}(ix,kk);
+            tmpA = instantAccum(ix,kk);
+            tmpGTCa = GTCaccum(ix,kk);
+            bin = zeros(length(Annuals)-1,1);
+            gtc = bin;
             % Pad update to Instantaeous Accumulation Model with intial 
             tmpAccum(~ismember(1:m,ix),kk) = AverageAccumulation{ii}(kk);% tmpAccum is instantDoom
-            reportAccum(kk) = mean(testInstant(ix,kk));
-            varAccum(kk) = var(testInstant(ix,kk));
+            for ll = 1:length(Annuals)-1
+                tmpIx = find(tmpAgeModel<abs(Annuals(ll)-(str2num(Year{1})+dayofyear/365))&...
+                    tmpAgeModel>=abs(Annuals(ll+1)-(str2num(Year{1})+dayofyear/365)));
+                bin(ll) = mean(tmpA(tmpIx));
+                gtc(ll) = mean(tmpGTCa(tmpIx));
+            end
+            
+            % Monte Carlo Sampling for Decaldal Mean accumulation and var
+            mcAccum = zeros(100,1);
+            for ll = 1:100
+                mcAccum(ll) =mean(datasample(bin,10,'replace',false));
+                mcGTCaccum(ll) = mean(datasample(gtc,10,'replace',false));
+            end
+%             reportAccum(kk) = mean(instantAccum(ix,kk));
+%             varAccum(kk) = var(instantAccum(ix,kk));
+            reportAccum(kk) = mean(mcAccum);
+            varAccum(kk) = var(mcAccum);
+%             GTCaccumulation(kk) = mean(GTCaccum(ix,kk));
+%             GTCvarAccumulation(kk) = var(GTCaccum(ix,kk));
+            GTCaccumulation(kk) = mean(mcGTCaccum);
+            GTCvarAccumulation(kk) = var(mcGTCaccum);
         end
         reportAccum = nonParametricSmooth(Traverse{ii},reportAccum,Traverse{ii},251);
         varAccum = nonParametricSmooth(Traverse{ii},varAccum,Traverse{ii},251);
+        
+        GTCaccumulation = nonParametricSmooth(Traverse{ii},GTCaccumulation,Traverse{ii},251);
+        GTCvarAccumulation = nonParametricSmooth(Traverse{ii},GTCvarAccumulation,Traverse{ii},251);
 
         AverageAccumulation3{ii} = reportAccum;
         varAccumulation3{ii} = varAccum;
