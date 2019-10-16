@@ -460,6 +460,42 @@ if (isPickDepthHorizons || isLoadDepthHorizons) && (isPickAgeHorizons || isLoadI
                   for rh = 1:nReflectionHorizon
             shadedErrorBarT8(distance,AverageAccumulation{ii},...
                 sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0.5,0,0],'linewidth',2});
+                  end
+        freezeColors
+        axis tight
+        axis ij
+        grid on
+        alpha(0.5)
+
+%          title('Average Annual Accumulation (m w.e. a^{-1})')
+         title({['\fontsize{14}Average Annual Accumulation'];...
+             ['\fontsize{12}\color[rgb]{0.5 0 0}Jan.2015-Jan.2017 \color[rgb]{0 0 0}Jan.1984-Jan.2017']})
+        set(gca,'xtick',[0, 20, 40, 60, 78])
+        set(gca,'xticklabel',[0,20,40,60,78])
+        set(gca,'fontsize',12,'fontweight','bold','layer','top')
+        xlabel('Distance (km)')
+        ylabel('(m w.e. a^{-1})')
+        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
+            'FontWeight','Bold', 'LineWidth', 1);
+        
+        % Compage GTC15 Density
+          for ii = 1:nFiles
+        distance = Traverse{ii}./1000;
+        figure(); hold on;
+%          shadedErrorBarT8(distance,AverageAccumulation2{ii},...
+%              sqrt(varAccumulation2{ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+%                  freezeColors
+
+         shadedErrorBarT8(distance,AverageAccumulation3{ii},...
+             sqrt(SnowWaterEqvVar{1,ii}),1,{'Color',[0,0,0],'linewidth',2});
+
+%              sqrt(varAccumulation3{ii}),1,{'Color',[0,0,0],'linewidth',3});
+
+                 freezeColors
+
+                  for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance,GTCaccumulation,...
+                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0.5,0,0],'linewidth',2});
             alpha(0.5)
                   end
         freezeColors
@@ -467,13 +503,14 @@ if (isPickDepthHorizons || isLoadDepthHorizons) && (isPickAgeHorizons || isLoadI
         axis ij
         grid on
 %          title('Average Annual Accumulation (m w.e. a^{-1})')
-         title({['\fontsize{14}Average Annual Accumulation'];...
-             ['\fontsize{12}\color[rgb]{0.5 0 0}Jan.2015-Jan.2017 \color[rgb]{0 0 0}Jan.1984-Jan.2017']})
+         title({['\fontsize{14}Average Surface Mass Balance'];...
+             ['\fontsize{12}\color[rgb]{0.5 0 0}GTC15 Density \color[rgb]{0 0 0}MXHL Density']})
         set(gca,'xtick',[0, 20, 40, 60, 78])
         set(gca,'xticklabel',[0,20,40,60,78])
         set(gca,'fontsize',12,'fontweight','bold')
         xlabel('Distance (km)')
         ylabel('(m w.e. a^{-1})')
+          end
         
         figure();
         subplot(3,1,1)
