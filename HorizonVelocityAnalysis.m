@@ -237,8 +237,8 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
         % Concatenate Primary Reflection Picks for Horizon rh
         GatherReflectionPicks{rh,ii} = cat(2,ReflectionFBpick{:,rh,ii});
         Reflection = GatherReflectionPicks{rh,ii};
-        for jj = looper
-%         parfor (jj = looper, nWorkers)
+%         for jj = looper
+        parfor (jj = looper, nWorkers)
             % Jackknife Simulation for Reflection Velocity Estimation
             % Multiple Shot Gathers in Population
             isManyShots = 1;
