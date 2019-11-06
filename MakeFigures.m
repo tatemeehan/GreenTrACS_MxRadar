@@ -285,7 +285,53 @@ if isDepthSection
     pcolor(Traverse{ii}./1000,DepthAxis{ii},tmpAccum);shading interp;colormap(yet_white);axis ij;
     set(gca,'fontsize',10,'fontweight','bold','layer','top');caxis([q])
 
+    % Compare GTC15 SMB and MXHL SMB
+    x = Annuals;
+X = [x;x];%flipud(x)]
+X = sort(X(:));
+Xx = [X(2:end);flipud(X(2:end-2))];
+y = bin(:,1);y = y(:);
+% Stairs
+X = X(2:end-1);
+Y = [y,y]'; Y = Y(:);
+ci = sqrt(binVar(:,1));
+yl = y - ci;
+yh = y+ci;
+% stairs(x,yl);stairs(x,yh)
+Yyh = [yh,yh]';Yyh = Yyh(:);
+Yyl = [flipud(yl),flipud(yl)]';Yyl = Yyl(:);
+Yy = [Yyh;Yyl];
+    figure();
+    stairs([Accumulation(1,15);Accumulation(1:33,15)],[2017;Accumulation(1:33,17)],'k','linewidth',2.5);hold on
+% patch(Yy,Xx,[0.75 0 0],'FaceAlpha',.25); hold on
+plot(Y,X,'color',[0.75,0,0],'linewidth',2.5)
+ylabel('Year (CE)')
+xlabel('SMB (m w.e. a^{-1})')
+title({['Annual Surface Mass Balance']; ['Jan.1984 - Jan.2017']})
+set(gca,'fontweight','bold','fontsize',14)
+legend('GTC15','MXHL','location','southeast')
+ylim([1984 2017])
+yticks(fliplr([2017,2010,2000,1990,1984]))
 
+figure();
+stairs(GTCdepthAge(:,2),GTCdepthAge(:,1),'k')
+hold on;
+tmpAgeModel = abs(bestAgeModel{1}(:,1)-(str2num(Year{1})+dayofyear/365));
+stairs(tmpAgeModel,DepthAxis{1},'r');
+% %     Zstair = [DepthAxis{1};DepthAxis{1}];
+% Zstair = [Annuals(1:end-1),flipud(Annuals(1:end-1))];
+%     [Zstair,Zix] = sort(Zstair);
+%     Zstairz = [Zstair(1:end);flipud(Zstair(1:end))]';
+%     Zstairz = flipud(Zstairz);
+%     mxhlSMBlow = [bin(:,1)-sqrt(binVar(:,1));bin(:,1)-sqrt(binVar(:,1))];
+%     mxhlSMBlow = mxhlSMBlow(Zix);
+%     mxhlSMBhi = [bin(:,1)+sqrt(binVar(:,1));bin(:,1)+sqrt(binVar(:,1))];
+%     mxhlSMBhi = mxhlSMBhi(Zix);
+%     mxhlSMBci = [mxhlSMBlow(:,:),flipud(mxhlSMBhi(:,:))];
+%     
+%     figure();
+%     patch(mxhlSMBci(2:2:end,1),Zstairz(1:2:end-1,1),[.5 0 0 ],'FaceAlpha',0.35);hold on;
+%     stairs(bin(:,1),Annuals(1:end-1));
 end
 
 %% Create Figures for Snow Surface Data

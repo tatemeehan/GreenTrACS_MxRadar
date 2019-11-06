@@ -289,6 +289,7 @@ elseif isGreenTracsFirnCore
     isCoreDepthAge = 1; % Use Age Depth Profile from Local Core Site
     coreNo = [15]; % Array of Firn Cores 1-16 to include in analysis
     depthAgeFilename = 'Core15_age_scale.txt';
+    depthDensityFilename = 'Core15_depth_density.txt';
     
     % Annual Accumulation Correction from Firn Core Chemistry [mwe]
     GreenTracsFirnCore
@@ -387,7 +388,7 @@ if isDepthSection && ~isLoadMxHL
     
     %% PickAge Horizons for Residual Update
     if isPickAgeHorizons
-        fprintf('Begin Picking Depth-Deposition Image \n')
+        fprintf('Begin Picking Age Image \n')
         tic
         
         PickAgeHorizons
@@ -396,7 +397,7 @@ if isDepthSection && ~isLoadMxHL
         isWriteIRH =0;
         if isWriteIRH
             cd '/home/tatemeehan/GreenTracs2017/MXHL';
-            save('isochronePicksCore15SpurW072319.mat','isochronePick','-v7.3')
+            save('isochronePicksCore15SpurW110319.mat','isochronePick','-v7.3')
             cd(workDir)
         end
         
@@ -407,6 +408,7 @@ if isDepthSection && ~isLoadMxHL
     elseif isLoadIRH
         cd '/home/tatemeehan/GreenTracs2017/MXHL';
         IRH = load('isochronePicksCore15SpurW070719.mat');
+%         IRH = load('isochronePicksCore15SpurW110319.mat');
         isochronePick = IRH.isochronePick;
         clear IRH
         cd(workDir)
@@ -464,7 +466,7 @@ if isDepthSection && ~isLoadMxHL
     toc
     display(' ')
 end
-%% PickAge Horizons for Residual Update
+%% Pick Depth Horizons for Residual Update
 if isPickDepthHorizons
     fprintf('Begin Picking Depth Image \n')
     tic

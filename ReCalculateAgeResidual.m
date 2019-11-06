@@ -79,13 +79,37 @@ for ii = 1:nFiles
         tmpDiffA = diff(bestAgeModel{ii});  % da
         tmpDiff = diff(DepthMatrix{ii});    % dz
         dUpdateAgeModel = [tmpDiff(1,:);tmpDiff]; % Colocation
-        % Compute the Integrated Average Accumulation
-        AverageAccumulationMatrix = (DepthMatrix{ii}.*AvgDensityModel{ii})./(bestAgeModel{ii}+eps);
-        % Compute dz/da for instantaneous accumulation rate
+%         % Compute the Integrated Average Accumulation
+%         AverageAccumulationMatrix = (DepthMatrix{ii}.*AvgDensityModel{ii})./(bestAgeModel{ii}+eps);
+%         % Compute dz/da for instantaneous accumulation rate
         GTCdensity = interp1(GTCzp(:,1),GTCzp(:,2),DepthAxis{ii},'pchip');
         GTCdensityModel = repmat(GTCdensity,1,n);
         GTCaccum = (dUpdateAgeModel.*GTCdensityModel)./([tmpDiffA(1,:);tmpDiffA]);
-        instantAccum = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
+%         instantAccum = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
+% 2nd Order Finite Difference
+tic
+innstantAccum = zeros(length(DepthMatrix{ii}(:,1)),length(updateAgeModel{ii}));
+parfor (kk = 1:length(updateAgeModel{ii}), nWorkers)
+% for kk = 1:length(updateAgeModel{ii})
+    tmp = zeros(length(DepthMatrix{ii}(:,1)),1);
+    
+for ll = 1:length(DepthMatrix{ii}(:,1))
+    locZ = DepthMatrix{ii}(ll,kk);
+    [~,ptsIx] = mink(abs(locZ-DepthMatrix{ii}(:,kk)),3);%find(abs(locZ-DepthMatrix{ii}(:,kk))>=0,3);
+    ptsIx = sort(ptsIx);
+    ptsZ = DepthMatrix{ii}(ptsIx,kk);
+%     cz = fdweights(locZ,ptsZ,1);
+%     dz(ll) = cz*ptsZ;
+    locA = bestAgeModel{ii}(ll,kk);
+    ptsA = bestAgeModel{ii}(ptsIx,kk);
+    ca = fdweights(locA,ptsA,1);
+%     da(ll) = ca*ptsA;
+    tmp(ll) = (ca(2,:)*ptsZ)*DensityModel{ii}(ll,kk);
+end
+instantAccum(:,kk) = tmp;
+%% 
+end
+
         % Despike Mathy Noise
         cutoff = quantile(instantAccum(:),[.005,.995]);
         tmpIx = find(instantAccum<cutoff(1) | instantAccum > cutoff(2));
@@ -95,13 +119,15 @@ for ii = 1:nFiles
         clear('cutoff','tmpIx')
         A1 = 2017; % Upper Year Bound
         % Lower Year Bound A2 = 1984
-        A2 = ceil(abs(max(datumDepthAge)-(str2num(Year{1})+dayofyear/365)));
+        A2 = round(abs(max(datumDepthAge)-(str2num(Year{1})+dayofyear/365)));
         Annuals = A2:A1;
         tmpAccum = instantAccum;
         m = size(bestAgeModel{ii},1);
         n = size(bestAgeModel{ii},2);
         reportAccum = zeros(n,1);
         varAccum = zeros(n,1);
+        bin = zeros(length(Annuals)-1,n);
+        gtc = bin;binVar = bin; gtcVar = bin;binN = bin; gtcN= bin;
         for kk = 1:n
             % Find indicies for Age Range A1 - A2
             ix = find(abs(bestAgeModel{ii}(:,kk)-(str2num(Year{1})+dayofyear/365)) < A1 ...
@@ -109,22 +135,25 @@ for ii = 1:nFiles
             tmpAgeModel = bestAgeModel{ii}(ix,kk);
             tmpA = instantAccum(ix,kk);
             tmpGTCa = GTCaccum(ix,kk);
-            bin = zeros(length(Annuals)-1,1);
-            gtc = bin;
+
             % Pad update to Instantaeous Accumulation Model with intial 
             tmpAccum(~ismember(1:m,ix),kk) = AverageAccumulation{ii}(kk);% tmpAccum is instantDoom
             for ll = 1:length(Annuals)-1
                 tmpIx = find(tmpAgeModel<abs(Annuals(ll)-(str2num(Year{1})+dayofyear/365))&...
                     tmpAgeModel>=abs(Annuals(ll+1)-(str2num(Year{1})+dayofyear/365)));
-                bin(ll) = mean(tmpA(tmpIx));
-                gtc(ll) = mean(tmpGTCa(tmpIx));
+                bin(ll,kk) = mean(tmpA(tmpIx));
+                binVar(ll,kk) = var(tmpA(tmpIx));
+                binN(ll,kk) = length(tmpA(tmpIx));
+                gtc(ll,kk) = mean(tmpGTCa(tmpIx));
+                gtcVar(ll,kk) = var(tmpGTCa(tmpIx));
+                gtcN(ll,kk) = length(tmpGTCa(tmpIx));
             end
             
             % Monte Carlo Sampling for Decaldal Mean accumulation and var
             mcAccum = zeros(100,1);
             for ll = 1:100
-                mcAccum(ll) =mean(datasample(bin,10,'replace',false));
-                mcGTCaccum(ll) = mean(datasample(gtc,10,'replace',false));
+                mcAccum(ll) =mean(datasample(bin(:,kk),10,'replace',false));
+                mcGTCaccum(ll) = mean(datasample(gtc(:,kk),10,'replace',false));
             end
 %             reportAccum(kk) = mean(instantAccum(ix,kk));
 %             varAccum(kk) = var(instantAccum(ix,kk));
