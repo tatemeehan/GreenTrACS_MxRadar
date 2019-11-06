@@ -112,7 +112,11 @@ for ii = 1:nFiles
             'FontWeight','bold','FontSize',12,'Position', [15 225 115 50],...
             'Callback',{@pickDisplayDensity});
         set(btn3,'Value',pickMod,'min',1,'max',25);
-                annotation('textbox',[.005,.19,.2,.2],'String',...
+        btn3.Units = 'normalized';
+        tmpPos =  btn3.Position;
+        btn3.Units = 'pixels';
+        txtPos = tmpPos + [0,tmpPos(4).*2,0,0];
+                annotation('textbox',txtPos,'String',...
                     'slow                    fast','fontweight','bold',...
                     'FitBoxToText','on','LineStyle','none')
         set(h,'WindowKeyPressFcn',@keyPressCallback);
@@ -603,6 +607,10 @@ for ii = 1:nFiles
             % Extrapolate NaN Values on Edges
             pickT{jj,kk,ii} = inpaint_nans(pickT{jj,kk,ii},1);
             pickX{jj,kk,ii} = 1:size(Radar{jj,ii},2);
+            % Median Filtering
+            R = 50;
+            pickT{jj,kk,ii} = round(medfilt1(pickT{jj,kk,ii},R.*fore));
+            pickT{jj,kk,ii}(1) = pickT{jj,kk,ii}(2);
             
             % Plot Smoothed Picks
             if strcmp(snap,'peak')

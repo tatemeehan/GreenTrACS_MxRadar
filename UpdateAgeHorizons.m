@@ -8,6 +8,8 @@ deltaAgeModel = cell(1,nFiles);
 depositionAgeModel = cell(1,nFiles);
 
     for ii = 1:nFiles
+        % Apply IRH Theory 
+        % The rows of the starting deposition age model are isochronal
         depositionAgeModel{ii} = ones(1,size(RadarDeposition{ii},2)).*DepositionAxis{ii};
         isochroneResidual = [ageResidual{1,:,ii}]';
         npicks = size(isochroneResidual,2);
@@ -16,7 +18,7 @@ depositionAgeModel = cell(1,nFiles);
         tmpDatum = [0;datumAge(:,ii)];
         % 1D Interpolation
         for jj = 1:npicks
-         % Depth-Age Model Update
+         % Age-Depth Model Update
          deltaAgeModel{ii}(:,jj) = interp1(tmpDatum,isochroneResidual(:,jj),DepositionAxis{ii},'pchip',0);
         end
         % Smooth deltaAgeModel
@@ -41,14 +43,15 @@ depositionAgeModel = cell(1,nFiles);
         ageStak = pseudoAgeModel{ii};
         DepositAxe = DepositionAxis{ii};
         DepthAxe = DepthAxis{ii};
+        TimeAxe = TimeAxis{ii};
         n = length(DepositAxe);
         ageUpdate = depositionAgeModel{ii};
         ages = ones(1,size(RadarDeposition{ii},2)).*DepositionAxis{ii};%zeros(size(RadarDeposition{ii}));
-        newAge = zeros(size(zStak));
+        newAge = zeros(size(zStak));newAgeT = newAge;
         % Do the Converison
         parfor (kk = 1:size(RadarDeposition{ii},2), nWorkers)
 %         for kk = 1:size(RadarDeposition{ii},2)
-            % Perform Trace Flattening
+            % Perform Residual Trace Flattening
             RadDeposition(:,kk) = interp1(ageUpdate(:,kk),RadDeposit(:,kk),ages(:,kk),'linear');
             % Update Age-Depth Model
             % Create the Conversion Axis Time 2 Age (TA)
@@ -58,23 +61,31 @@ depositionAgeModel = cell(1,nFiles);
             % Create the Conversion Axis Age 2 Depth (TZ)
             tmpAxTZ = interp1(tStak(:,kk),zStak(:,kk),tmpAxTA,'linear');
             mData = length(tmpAxTZ);
-            % Use interp1 Alg Here
+            % Conversion of Deposition-Age 2 Depth-Age
             newAge(:,kk) = interp1(tmpAxTZ,ageUpdate(1:mData,kk),DepthAxe);
+            % Conversion of Deposition-Age 2 Travel-time-Age
+            newAgeT(:,kk) = interp1(tmpAxTA,ageUpdate(1:mData,kk),TimeAxe);
         end
         % Fill Interpolation NaNs
         nanIx = isnan(RadDeposition);
         RadDeposition(nanIx) = 0;
         RadarDeposition{ii} = RadDeposition;
+        % Filter and Store the Age-Depth Model Update
         newAge = abs(imgaussfilt(inpaint_nans(newAge,1),[1,50]));
         newAge(1,:) = 0;
         updateAgeModel{ii} = newAge;
         dUpdateAgeModel = [eps.*ones(1,size(newAge,2));diff(newAge)];
 %                 dUpdateAgeModel = [eps.*ones(1,size(updateAgeModel{ii},2));diff(updateAgeModel{ii})];
-
-        updatePseudoAgeModel{ii} = (StackingVelocityModel{ii}.*(updateAgeModel{ii})./DepthMatrix{ii}).*(tStack{ii}./2);
-        updatePseudoAgeModel{ii}(1,:) = 0; % Set NaNs to Zero
 %         tmpDiff = diff(DepthMatrix{ii});
 %         dUpdateAgeModel = [tmpDiff(1,:);tmpDiff];
+
+        % Filter and Store the Age-Travel-time Model Update
+        newAgeT = abs(imgaussfilt(inpaint_nans(newAgeT,1),[1,50]));
+        newAgeT(1,:) = 0;
+        updatePseudoAgeModel{ii} = newAgeT;
+%         updatePseudoAgeModel{ii} = (StackingVelocityModel{ii}.*(updateAgeModel{ii})./DepthMatrix{ii}).*(tStack{ii}./2);
+        updatePseudoAgeModel{ii}(1,:) = 0; % Set NaNs to Zero
+
         
         %%% Causal Integration Inversion for Instantaneous Accumulation %%% 
         %AverageAccumulation{ii} = mean((DepthMatrix{ii}(accumIx:end,:).*AvgDensityModel{ii}(accumIx:end,:))./(updateAgeModel{ii}(accumIx:end,:)+eps));        
@@ -107,7 +118,7 @@ depositionAgeModel = cell(1,nFiles);
     clear('n','RadDeposition','RadDeposit','DepositAxe','DepositAxeMat',...
         'ageStak','aacurve','ageUpdate','azcurve','newAge','accumIx',...
         'dUpdateAgeModel','W','Gw','dw','m','AverageAccumulationMatrix',...
-        'instantAccum');
+        'instantAccum','newAgeT');
 
 
     

@@ -35,10 +35,13 @@ RadarDepth = RadarDeposition;
             tmpAxTZ = interp1(tStak(:,kk),zStak(:,kk),tmpAxTA,'linear');
             mData = length(tmpAxTZ);
 
-            % Use interp1 Alg Here
+            % Convert Trace from Age 2 Depth
             tmpTrc = interp1(tmpAxTZ,RadDeposit(1:mData,kk),AxZ);
             % Pad Interpolation with Zeros
             RadDepth(:,kk) = [tmpTrc;zeros(m - length(tmpTrc),1)];
+            
+            % Conversion to Travel-Time for Residual Velocity Analysis ...
+            % not currently functional
 
             % [Age,Depth] - Array to be resampled
 %             azcurve = [tmpModel(:,kk),zStak(:,kk)];

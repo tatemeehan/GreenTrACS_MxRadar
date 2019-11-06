@@ -1,4 +1,15 @@
 %% Normal Moveout Correction
+% A step of 2D interpolation of the NMO velocity model is computed during 
+% an initial iteration over the first channel. Subsequent channels are
+% processed in parallel.
+%
+% Output Variables where mxn is #samples x #traces
+% xStack ~ mxn matrix of distance (x coordinate) values
+% tStack ~ mxn matrix of two-way travel-times
+% vStack ~ mxn matrix of NMO velocities
+% zStack ~ mxn matrix of depths (tStack.*vStack)./2
+% RadarNMO ~ the NMO corrected common-offset gathers
+
     % Maximum Allowable Wavelet Stretch [%]
     Stretch = 100;
     % Allocation

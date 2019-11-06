@@ -6,22 +6,37 @@
     pseudoAgeModel{ii} = cell(1,nFiles);
 
     for ii = 1:nFiles
-        DepositionAxis{ii} = [linspace(min(AgeModel{ii}(:)),max(AgeModel{ii}(:)),length(AgeModel{ii}(:,1)))]';
         % Create Age-Time Model
-        pseudoAgeModel{ii} = (StackingVelocityModel{ii}.*(AgeModel{ii})./DepthMatrix{ii}).*(tStack{ii}./2);
+%         pseudoAgeModel{ii} = (StackingVelocityModel{ii}.*(AgeModel{ii})./DepthMatrix{ii}).*(tStack{ii}./2);
+%         pseudoAgeModel{ii} = (StackingVelocityModel{ii}.*(AgeModel{ii})./zStack{ii}).*(tStack{ii}./2);
+%         pseudoAgeModel{ii}(1,:) = 0; % Set NaNs to Zero
+%         tmpModel = pseudoAgeModel{ii};
+        % Using Depth to Time Conversion
+        ageMod = AgeModel{ii};
+        zStak = zStack{ii};
+        tStak = tStack{ii};
+        zAxe = DepthMatrix{ii};
+        ageT = zeros(size(ageMod));
+        parfor (kk = 1:size(RadarStack{ii},2), nWorkers)
+            % Conversion Axis Depth 2 Time (ZT) is zStacK
+            % Use interp1 Alg Here
+            tmpAgeT = interp1(zAxe(:,kk),ageMod(:,kk),zStak(:,kk),'linear','extrap');
+            ageT(:,kk) = tmpAgeT;
+        end
+        pseudoAgeModel{ii} = ageT;
         pseudoAgeModel{ii}(1,:) = 0; % Set NaNs to Zero
         tmpModel = pseudoAgeModel{ii};
+        clear('ageMod','zAxe','ageT');
 
         [m,n] = size(RadarStack{ii});
         q = 2; % Quantity times the current number of samples
         RadDeposit = zeros(q.*m,n);
         RadStack = RadarStack{ii};
+        DepositionAxis{ii} = [linspace(min(tmpModel(:)),max(tmpModel(:)),length(tmpModel(:,1)))]';
         DepositAxe = DepositionAxis{ii};
         % ReSample in Age Domain
         DepositAxe = [linspace(min(DepositAxe),max(DepositAxe),q.*length(DepositAxe))]';
         DepositionAxis{ii} = DepositAxe;
-        zStak = zStack{ii};
-        tStak = tStack{ii};
         parfor (kk = 1:size(RadarStack{ii},2), nWorkers)
 %         for kk = 1:size(RadarStack{ii},2)
 %             % [Time, Age] - Array to be resampled

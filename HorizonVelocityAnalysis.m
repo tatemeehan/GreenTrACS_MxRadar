@@ -260,7 +260,7 @@ warning('off','MATLAB:mir_warning_maybe_uninitialized_temporary');
                 % Jackknife Simulation for Reflection Velocity Estimation
                 if isManyShots
                     for kk = 1:1250 % 1250 Random Draws
-                    nCut = randsample([0,1],1);
+                    nCut = randsample([0,1,2],1);
                     cutChan = randsample(liveChan,nCut);
                     xvalChan = liveChan;
                     cutIx = find(ismember(liveChan,cutChan));

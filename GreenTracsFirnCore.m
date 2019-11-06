@@ -23,7 +23,10 @@ GTCzp = load(depthDensityFilename);
 %% Extract GPS Location of Firn Core
 iceCoreLL = GTCza(1,:);
 iceCoreXY = ll2psn(iceCoreLL(1),iceCoreLL(2));
-if GTCzp(1,:) == GTCza(1,:)
+if norm(GTCzp(1,:) - iceCoreLL) < 1e-8
+GTCza(1,:) = [];
+GTCzp(1,:) = [];
+elseif norm(GTCzp(1,:) - iceCoreXY) < 1e-8
 GTCza(1,:) = [];
 GTCzp(1,:) = [];
 else
