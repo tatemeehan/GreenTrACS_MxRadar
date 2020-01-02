@@ -12,7 +12,8 @@
 addpath './functions'
 %% Load GPS.csv
 workingDir = pwd;
-dataDir = '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+% dataDir = '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+dataDir = 'D:\GreenTrACS\2017\GPS\Processed\06\17';
 writeDir = '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
 isWrite = 0;
 isNetR8 = 0;    % 5 column Format
