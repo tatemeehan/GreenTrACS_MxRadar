@@ -48,7 +48,7 @@ qCovAvg = [qCovAvg(1).*ones(floor((1*S+1)/2),1);qCovAvg;qCovAvg(end).*ones(floor
 
 % Deteminie Quantile Threshold by Maximum Difference of Mean Covariance
 quantiles = linspace(0.95,1,1000);
-meanMovingCov = zeros(1000,1);
+meanMovingCov = zeros(1000,1);meanStaticCov = meanMovingCov;
 for kk = 1:1000
 
 qCov = quantile(qCovAvg(100:end),quantiles(kk));
@@ -62,10 +62,16 @@ peakIx = dumTraces(peakIx);
 [Threshold] = min(peakIx); 
 
 meanMovingCov(kk) = mean(covRad(Ix(1:Threshold-1)));
+meanStaticCov(kk) = mean(covRad(Ix(Threshold:end)));
+
 end
 
 % Maximization Classification of Quantile Means
 [~,qIx] = max(diff(meanMovingCov));
+% [~,qIx] = max(meanMovingCov(11:end)-meanMovingCov(1:end-10));
+
+% [~,qIx] = max(abs(meanStaticCov-meanMovingCov));
+
 
 % q is Optimal Quantile
 q = quantiles(qIx);
@@ -84,6 +90,17 @@ peakIx = dumTraces(peakIx);
 
 % Identify Static Traces
 staticTraces = Ix(Threshold:end);
+
+% Order of Magnitude Filter in case some points sneak through
+% Remove Points
+tmp = meanStaticCov(qIx); mag = floor(log10(tmp));
+rmvIx = covRad(staticTraces)<1.*10.^mag;
+staticTraces(rmvIx) = [];
+goodTraces = traces;
+goodTraces(staticTraces) = [];
+% Add Points
+addIx = (goodTraces(covRad(goodTraces)>1.*10.^mag))';
+staticTraces = [staticTraces;addIx];
 
 % Identify Multiplexed Static Traces
 staticPlexTraces = nearPlex(staticTraces) + modChan; 
