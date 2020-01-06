@@ -1,5 +1,5 @@
 function [ removeTraces, staticTraces ] = removeStaticTrace( Rad, multiplexNtrcs, nearChan,  nChan )
-% removeCovTrace seeks and removes the traces which are duplicated when
+% removeCovTrace seeks and removes the traces that are duplicated when
 % the radar array is stationary. This only applies to FreeRun DAQ. 
 % This approach uses the covariance matrix to self determine an appropriate
 % threshold for static trace removal. 
@@ -14,6 +14,9 @@ function [ removeTraces, staticTraces ] = removeStaticTrace( Rad, multiplexNtrcs
 %   Output removeTraces - Static Trace indicies
 %
 % Written by, Tate Meehan, Boise State University, GreenTrACS 2017
+
+% Surpress Warning 
+warning('off','signal:findpeaks:largeMinPeakHeight')
 
 [~, ntrc] = size(Rad); % Evaluate Size of Data
 traces = 1:ntrc; % Create Array of Trace Indicies
@@ -43,36 +46,46 @@ qCovAvg = (qCovRad((1*S+1):end)-qCovRad(1:(end-1*S)))./(1*S+1);
 % Append Edges to Maintain Indicies
 qCovAvg = [qCovAvg(1).*ones(floor((1*S+1)/2),1);qCovAvg;qCovAvg(end).*ones(floor((1*S+1)/2),1)];
 
-% Compute 99% Quantile of Running Differenced Average to Define Peak Thresh
-% Steer Clear of Padded Edge (100:end) - Creates Artificial Peak
-q99 = quantile(qCovAvg(100:end),0.99);
+% Deteminie Quantile Threshold by Maximum Difference of Mean Covariance
+quantiles = linspace(0.95,1,1000);
+meanMovingCov = zeros(1000,1);
+for kk = 1:1000
 
-% Find Peak Change in Covariance - Evaluated 99% Probability
-% [~,peakIx] = findpeaks(qCovAvg(100:end),traces(100:end),'MinPeakHeight',q99);
-[~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',q99);
+qCov = quantile(qCovAvg(100:end),quantiles(kk));
+
+% Find Peak Change in Covariance - Evaluated q Probability
+[~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',qCov);
 dumTraces = traces(100:end);
 peakIx = dumTraces(peakIx);
 
 % Evaluate the Data Covariance Threshold
-[Threshold] = min(peakIx); threshCov = qCovRad(Threshold);
+[Threshold] = min(peakIx); 
+
+meanMovingCov(kk) = mean(covRad(Ix(1:Threshold-1)));
+end
+
+% Maximization Classification of Quantile Means
+[~,qIx] = max(diff(meanMovingCov));
+
+% q is Optimal Quantile
+q = quantiles(qIx);
+
+% Define Peak Covarince Threshold of Running Differenced Average Covariance
+% Steer Clear of Padded Edge (100:end) - Creates Artificial Peak
+qCov = quantile(qCovAvg(100:end),q);
+
+% Find Peak Change in Covariance - Evaluated at Optimal Probability
+[~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',qCov);
+dumTraces = traces(100:end);
+peakIx = dumTraces(peakIx);
+
+% Evaluate the Data Covariance Threshold
+[Threshold] = min(peakIx);
 
 % Identify Static Traces
 staticTraces = Ix(Threshold:end);
 
-% Sort Static Traces and Find Distances
-sortStaticTraces = sort(staticTraces);
-group = diff(sortStaticTraces);
-
-% % Remove Traces During Array Turning
-% groupIx = find(group > 1 & group < 250);
-% 
-% % Append Additional Traces for Removal
-% for jj = 1:length(groupIx)
-%     appendTraces = sortStaticTraces(groupIx(jj)) + 1 : sortStaticTraces(groupIx(jj) + 1) -1;
-%     staticTraces = [staticTraces;appendTraces(:)];
-% end
-
-% staticTraces = find(covRadW > Threshold ); % Static Traces
+% Identify Multiplexed Static Traces
 staticPlexTraces = nearPlex(staticTraces) + modChan; 
 
 % Infill Multiplex Trace Indicies For Removal
@@ -88,4 +101,3 @@ for ii = 1:nChan
 end
 
 end
-
