@@ -8,13 +8,15 @@
 
 %  Boise State University: Tate Meehan GreenTrACS 2017
 
-% clear; close all; clc;
+clear; close all; clc;
 addpath './functions'
-%% Load GPS.csv
+% Load GPS.csv
 workingDir = pwd;
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
-dataDir = 'D:\GreenTrACS\2017\GPS\Processed\06\17';
-writeDir = '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+% Locate GPS data directory and designate output directory
+getDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/GPS/Processed';
+dataDir = uigetdir(getDir,'GPS Data Directory');
+getDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation';
+writeDir = uigetdir(getDir,'Write Directory');
 isWrite = 0;
 isNetR8 = 0;    % 5 column Format
 isGeoHx = 0;    % Core 2 & Core 5 Spirals
@@ -61,11 +63,186 @@ Lon = Lon(:);
 Zwgs84 = [LLZDT{:,3}];
 Zwgs84 = Zwgs84(:);
 
-% Remove StaticGPS Traces
-% Include Useage of GPS Edges.
-win = 11;
-[GPSix,GPSixEdges] = removeStaticGPS(Lon,Lat,win);
-% GPSix = 1:length(LLZDT);
+%% Remove Static GPS Traces
+
+% Select the Removal Method
+rmvMethod = questdlg('Which method for static position removal?','Choose Method',...
+    'Automatic','Manual','No Removal','Automatic');
+% Automatic Removal
+if strcmp(rmvMethod,'Automatic')
+    win = 11;
+    [GPSix,GPSixEdges] = removeStaticGPS(Lon,Lat,win);
+end
+% Manual Removal
+if strcmp(rmvMethod,'Manual')
+    
+    % Create Figure with Lat and Lon versus Index
+    figure(100);clf; hold on;
+    plot(1:length(Time),abs(Lat)-mean(abs(Lat)),'k')
+    plot(1:length(Time),abs(Lon)-mean(abs(Lon)),'b')
+    
+    % Allocate
+    tmpGPSix = [];
+    iter = 1;
+    surgIter = 0;
+    surgIx = [];
+    undo = [];
+    
+    % Picker Loop is Broken with 'Enter' key
+    while 1
+        % Manual Pick with Cursor
+        [tIx,yIx,b] = ginput(1);
+        % Select GPS Edges with Left Click or Space Bar
+        if b == 1
+            isPick = 1;
+        elseif b == 32
+            isPick = 1;
+        else
+            isPick = 0;
+        end
+        
+        % Picking Options:
+        % 'Enter' ~ exit the picker
+        % 'Left Click' or 'Space Bar' ~ pick edges of good GPS locations
+        % 'r' ~ Select edge positions for surgical position removal
+        % 'z' ~ 10 seconds of zoom tool
+        % 'u' ~ undo last GPS pick
+        % 'i' ~ undo last surgical removal pick
+        
+        if isempty(b)
+            break
+        elseif ~isPick
+            % Neutralize Iteration Count
+            iter = iter-1;
+            
+            % Press 'z' for zoom
+            % You have 10 Seconds of Zoom
+            if b == 122
+                zoom on
+                pause(10)
+                zoom off
+            end
+            
+            % Surgical Removal of extra stops not associated with file save
+            if b == 114
+                surgIter = surgIter+1;
+                surgIx = [surgIx,round(tIx)];
+                figure(100);
+                plot(round(tIx),yIx,'db','markersize',7,'linewidth',2)
+                undo = [undo,'i'];
+            end
+            
+            % Press 'u' for undo last pick
+            if b == 117
+                if ~isempty(tmpGPSix)
+                % Delete the Pick
+                tmpGPSix(iter) = [];
+                % Clear the Plotted Point
+                h100 = figure(100);
+                child = get(gca,'Children');
+                undoIx = min(strfind(fliplr(undo),'u'));
+                delete(child(undoIx));
+                clear('child')                
+                % Remove 'u' from undo array
+                undoIx = max(strfind(undo,'u'));
+                undo(undoIx) = [];
+                iter = iter-1;
+                end
+            end
+            
+            % Press 'i' for undo last surgical remove index
+            if b == 105
+                if ~isempty(surgIx)
+                % Delete the Pick
+                surgIx(surgIter) = [];
+                % Clear the Plotted Point
+                figure(100);
+                child = get(gca,'Children');
+                undoIx = min(strfind(fliplr(undo),'i'));                
+                delete(child(undoIx));
+                clear('child')
+                % Remove 'i' from undo array
+                undoIx = max(strfind(undo,'i'));
+                undo(undoIx) = [];
+                surgIter = surgIter-1;
+                end
+            end
+        else
+            figure(100); 
+            plot(round(tIx),yIx,'rx','markersize',15,'linewidth',2)
+            tmpGPSix(iter) = round(tIx);
+            undo = [undo,'u'];
+        end
+        iter = iter+1;
+    end
+    
+    % Check and Sort Surgical Removal 
+    if ~isempty(surgIx)
+        if mod(length(surgIx),2) ~= 0
+            warning('Unpaired Surgery.. will not Operate')
+            surgIx = [];
+        else
+            surgIx = sort(surgIx);
+            surgIx = reshape(surgIx,2,length(surgIx)/2);
+            nSurg = size(surgIx,2);
+            surgIter = 1;
+        end
+
+    end
+       
+    % Check that GPS Segments have Start and Stop Edges
+    if mod(length(tmpGPSix),2) == 0
+        tmpGPSix = reshape(tmpGPSix,2,length(tmpGPSix)/2);
+        GPSix = [];
+        GPSixEdges = zeros(size(tmpGPSix));
+        for kk = 1:size(tmpGPSix,2)
+            % Perform Surgical Position Removal
+            if ~isempty(surgIx)
+                tmpIx = find(surgIx(1,:)>tmpGPSix(1,kk) & surgIx(2,:)<tmpGPSix(2,kk));
+                if isempty(tmpIx)
+                    % Append Good GPS Positions
+                    GPSix = [GPSix;(tmpGPSix(1,kk):tmpGPSix(2,kk))'];
+                    % Catch Dupilcated GPSix
+                    GPSix = unique(GPSix);
+                else
+                    nOps = length(tmpIx);
+                    for ll = 1:nOps
+                        if (surgIx(1,surgIter) > tmpGPSix(1,kk)) && (surgIx(2,surgIter) < tmpGPSix(2,kk))
+                            % Number of Positions to Remove
+                            tmp = length(surgIx(1,surgIter)+1:surgIx(2,surgIter)-1);
+                            GPSix = [GPSix;([tmpGPSix(1,kk):surgIx(1,surgIter),surgIx(2,surgIter):tmpGPSix(2,kk)])'];
+                            % Catch Dupilcated GPSix
+                            GPSix = unique(GPSix);
+                        end
+                        surgIter = surgIter+1;
+                    end
+                end
+                % Find Start/Stop Edges
+                GPSixEdges(1,kk) = find(GPSix == tmpGPSix(1,kk));
+                GPSixEdges(2,kk) = length(GPSix);
+            else
+                % Append Good GPS Positions
+                GPSix = [GPSix;(tmpGPSix(1,kk):tmpGPSix(2,kk))'];
+                GPSix = unique(GPSix);
+                % Find Start/Stop Edges
+                GPSixEdges(1,kk) = find(GPSix == tmpGPSix(1,kk));
+                GPSixEdges(2,kk) = find(GPSix == tmpGPSix(2,kk));
+            end
+        end
+    else
+        error('Matched Edges were not Selected. Please Select Again')
+    end
+    % if manual picker is exited without any picks
+    if isempty(tmpGPSix)
+        GPSix = 1:length(LLZDT);
+        GPSixEdges = [GPSix(1);GPSix(end)];
+    end
+end
+% No Removal
+if strcmp(rmvMethod,'No Removal')
+    GPSix = 1:length(LLZDT);
+    GPSixEdges = [GPSix(1);GPSix(end)];
+end
 
 % Place LLZDT in Array
 Date = Date(GPSix);
@@ -83,12 +260,12 @@ Zwgs84 = Zwgs84(:);
 Zwgs84 = Zwgs84-1.92; 
 
 % Smooth Lon, Lat, Elevation
-R = 25; % Smoothing Window Rank
+R = 5; % Smoothing Window Rank
 X = 1:length(Zwgs84); % Estimtes to Smooth
 
-% % Smooth Coordinate Estimate
-% Lon = nonParametricSmooth(X,Lon,X,R);
-% Lat = nonParametricSmooth(X,Lat,X,R);
+% Smooth Coordinate Estimate
+Lon = nonParametricSmooth(X,Lon,X,R);
+Lat = nonParametricSmooth(X,Lat,X,R);
 
 % Smooth Elevation Estimate
 if isGeoHx || isRTKgps
@@ -175,22 +352,25 @@ Selection = (1:length(Lat));
 % Save GPS Data
 if isWrite
 cd(writeDir)
-writeName = 'MxRadarGPSCore15SpurW061317.mat';
+putName = inputdlg('Input File Name (Exclude the File Extension)');
+writeName = [putName{1},'.mat'];
+% writeName = 'MxRadarGPSCore15SpurW061317.mat';
 save(writeName,'GeoLocation','-v7.3')
 cd(workingDir)
 end
 
 %% Create Maps
 
-figure(1);
+figure(1);clf;
 ax = worldmap('Greenland');
 greenland = shaperead('landareas', 'UseGeoCoords', true,...
   'Selector',{@(name) strcmp(name,'Greenland'), 'Name'});
 patchm(greenland.Lat, greenland.Lon, [1.0 1 1.0])
 geoshow([Lat(Selection(1))],[Lon(Selection(1))],'marker','*','color','black','markersize',10)%,'color','black','linewidth',5);
 
-figure(2);
-plot(X(Selection)/1000,Y(Selection)/1000, 'k', 'linewidth', 2)
+figure(2);clf
+% plot(X(Selection)/1000,Y(Selection)/1000, 'k', 'linewidth', 2)
+plot(X/1000,Y/1000, 'k', 'linewidth', 2)
 % plot(Lon(Selection),Lat(Selection), 'k', 'linewidth', 2)
 title('Traverse Route')
 % xlabel('Longitude ^{.\circ}')
@@ -199,8 +379,12 @@ xlabel('Easting [km]')
 ylabel('Northing [km]')
 set(gca, 'FontSize', 12, 'FontWeight','bold')
 grid on
+hold on;
+for kk = 1:size(GPSixEdges,2)
+    plot(X(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000,Y(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000, 'linewidth', 2)
+end
 
-figure(3);
+figure(3);clf
 plot(DistanceKm,Zegm08(Selection),'k','linewidth',2)
 xlabel('Distance [km]')
 ylabel('WGS84-EGM2008 Elevation [m]','rotation',270)
@@ -208,7 +392,7 @@ title('Topographic Profile')
 set(gca,'fontsize',14,'fontweight','bold')
 grid on
 
-figure(4);
+figure(4);clf
 plot3(X(Selection)/1000,Y(Selection)/1000, Zegm08(Selection), 'k','linewidth',2)
 title('Topography')
 xlabel('Easting [km]')

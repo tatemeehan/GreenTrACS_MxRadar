@@ -25,8 +25,9 @@ if isDTM
     sLon = [sLon(1).*ones(floor((1*S+1)/2),1);sLon;sLon(end).*ones(floor((1*S+1)/2),1)];
     sLat = [sLat(1).*ones(floor((1*S+1)/2),1);sLat;sLat(end).*ones(floor((1*S+1)/2),1)];
     % Cut off Threshold (May not be Robust)
-    threshold = 1e-6;
+    threshold = max(sLat)./100;%1e-6;
     GPSixLat = find(sLat > threshold);
+    threshold = max(sLon)./100;
     GPSixLon = find(sLon > threshold);
     
     % Take fewer Indicies Home
@@ -51,7 +52,7 @@ if isDTM
     % Append Edges to Maintain Indicies
     sGPSix = [sGPSix(1).*ones(floor((1*S+1)/2),1);sGPSix;sGPSix(end).*ones(floor((1*S+1)/2),1)];
     % Slopes Greater than 1 Will be Static Points
-    s1GPSix = find(sGPSix > 1);
+    s1GPSix = find(sGPSix >= 1);
     % Difference Static Indicies and Append with 1 to keep Index Correct
     ds1GPSix = [1;diff(s1GPSix)];
     % Bin the Data (Should be N .nc Files)
