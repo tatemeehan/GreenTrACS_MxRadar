@@ -131,7 +131,7 @@
             nearRad = processTraceRemoval... % Processes Near Offset Data
                 (Rad{ii}(:,nearChan:nChan:end), f0, dt );
             % Remove Duplicate Static Traces
-            dupIx = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
+            [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
             clear('nearRad');
             
             trhd{ii}(:,dupIx) = [];         % Remove Static Trace Headers from Multiplexed Record
@@ -145,7 +145,7 @@
             display(' ')
             
         end
-        
+        if isLoadGPS
         % Interpolate GPS
         % GPS = [X,Y,Z,Distance,Slope,Speed,Heading,Tailing];
         nGPS = size(GPS,1);
@@ -163,7 +163,7 @@
         % Append GPS to Trace Header
         trhd{ii}(13:20,:) = [Xi;Yi;Zi;Si;Sxi;Vi;Hi;Ti];
         clear('GPS','nGPS','nTrcs','Si','Xi','Yi','Zi','Sxi','Vi','Hi','Ti','xq');
-        
+        end
         % Remove Skip Traces if Wheel Odometer Acquisition
         if isOdometer
         dupIx = find(~(diff(trhd{ii}(23,:)))); % Find Skipped Traces
@@ -217,8 +217,9 @@
         % Pad Data with Instrument Zero
         if strcmp(Year{ii},'2016')
             padding = 50;
-        end
-        if strcmp(Year{ii},'2017')
+        elseif strcmp(Year{ii},'2017')
+            padding = 0;
+        else
             padding = 0;
         end
         instrumentPad = zeros(padding,size(Rad{ii},2));

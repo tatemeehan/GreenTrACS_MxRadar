@@ -18,12 +18,20 @@ clear; close all; clc;
 % dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-2-16-Core7-Spur-W';
 
 % GreenTrACS 2017
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-11-17-Core14Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-9-17-Core13Core14Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-6-17-Core12Core13Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-3-17-Core12SpurE';
+dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-2-17-Core12SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-1-17-Core11Core12Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-31-17-Core11SpurW';
 % dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS\2017\6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-19-17-SummitRouteII';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-18-17-SummitRouteI';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-15-17-Core15Core16Traverse';
-dataDir = '/home/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
+
+% dataDir = '/home/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
 % dataDir = '/sonichome/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
 % dataDir = 'E:\GreenTrACS\2017\6-13-17-Core15SpurW';
 % dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-13-17-Core15SpurW';
@@ -93,7 +101,7 @@ isLoadDepthHorizons = 1;       % Load Previously Picked Depth Horizons
 isPickDepthHorizons = 0;       % Pick Isochronous Depth Horizons
 isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
-isLoadGPS = 1;                 % Load GPS for MxRadar
+isLoadGPS = 0;                 % Load GPS for MxRadar
 isGreenTracsFirnCore = 1;      % Load GreenTracs Firn Core Data
 isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 
@@ -147,7 +155,7 @@ yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [0,1,2,4,7];               % Array of data "LINE" numbers
+lineNo = 5;%[0,1,2,4,7];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
