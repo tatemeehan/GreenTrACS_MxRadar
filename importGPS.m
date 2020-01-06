@@ -63,9 +63,9 @@ Lon = Lon(:);
 Zwgs84 = [LLZDT{:,3}];
 Zwgs84 = Zwgs84(:);
 
-% Remove StaticGPS Traces
-% Include Useage of GPS Edges.
+%% Remove Static GPS Traces
 
+% Select the Removal Method
 rmvMethod = questdlg('Which method for static position removal?','Choose Method',...
     'Automatic','Manual','No Removal','Automatic');
 % Automatic Removal
@@ -75,20 +75,46 @@ if strcmp(rmvMethod,'Automatic')
 end
 % Manual Removal
 if strcmp(rmvMethod,'Manual')
+    
+    % Create Figure with Lat and Lon versus Index
     figure(100);clf; hold on;
     plot(1:length(Time),abs(Lat)-mean(abs(Lat)),'k')
     plot(1:length(Time),abs(Lon)-mean(abs(Lon)),'b')
+    
+    % Allocate
     tmpGPSix = [];
     iter = 1;
     surgIter = 0;
     surgIx = [];
+    undo = [];
+    
+    % Picker Loop is Broken with 'Enter' key
     while 1
-        % Select GPS Edges with Left Click or Space Bar
+        % Manual Pick with Cursor
         [tIx,yIx,b] = ginput(1);
+        % Select GPS Edges with Left Click or Space Bar
+        if b == 1
+            isPick = 1;
+        elseif b == 32
+            isPick = 1;
+        else
+            isPick = 0;
+        end
+        
+        % Picking Options:
+        % 'Enter' ~ exit the picker
+        % 'Left Click' or 'Space Bar' ~ pick edges of good GPS locations
+        % 'r' ~ Select edge positions for surgical position removal
+        % 'z' ~ 10 seconds of zoom tool
+        % 'u' ~ undo last GPS pick
+        % 'i' ~ undo last surgical removal pick
+        
         if isempty(b)
             break
-        elseif b ~= 1 %|| b ~= 32
+        elseif ~isPick
+            % Neutralize Iteration Count
             iter = iter-1;
+            
             % Press 'z' for zoom
             % You have 10 Seconds of Zoom
             if b == 122
@@ -103,6 +129,7 @@ if strcmp(rmvMethod,'Manual')
                 surgIx = [surgIx,round(tIx)];
                 figure(100);
                 plot(round(tIx),yIx,'db','markersize',7,'linewidth',2)
+                undo = [undo,'i'];
             end
             
             % Press 'u' for undo last pick
@@ -113,8 +140,12 @@ if strcmp(rmvMethod,'Manual')
                 % Clear the Plotted Point
                 h100 = figure(100);
                 child = get(gca,'Children');
-                delete(child(1));
-                clear('child')
+                undoIx = min(strfind(fliplr(undo),'u'));
+                delete(child(undoIx));
+                clear('child')                
+                % Remove 'u' from undo array
+                undoIx = max(strfind(undo,'u'));
+                undo(undoIx) = [];
                 iter = iter-1;
                 end
             end
@@ -127,8 +158,12 @@ if strcmp(rmvMethod,'Manual')
                 % Clear the Plotted Point
                 figure(100);
                 child = get(gca,'Children');
-                delete(child(1));
+                undoIx = min(strfind(fliplr(undo),'i'));                
+                delete(child(undoIx));
                 clear('child')
+                % Remove 'i' from undo array
+                undoIx = max(strfind(undo,'i'));
+                undo(undoIx) = [];
                 surgIter = surgIter-1;
                 end
             end
@@ -136,6 +171,7 @@ if strcmp(rmvMethod,'Manual')
             figure(100); 
             plot(round(tIx),yIx,'rx','markersize',15,'linewidth',2)
             tmpGPSix(iter) = round(tIx);
+            undo = [undo,'u'];
         end
         iter = iter+1;
     end
@@ -143,7 +179,7 @@ if strcmp(rmvMethod,'Manual')
     % Check and Sort Surgical Removal 
     if ~isempty(surgIx)
         if mod(length(surgIx),2) ~= 0
-            warning('Unpaired Surgury.. will not Operate')
+            warning('Unpaired Surgery.. will not Operate')
             surgIx = [];
         else
             surgIx = sort(surgIx);
@@ -154,6 +190,7 @@ if strcmp(rmvMethod,'Manual')
 
     end
        
+    % Check that GPS Segments have Start and Stop Edges
     if mod(length(tmpGPSix),2) == 0
         tmpGPSix = reshape(tmpGPSix,2,length(tmpGPSix)/2);
         GPSix = [];
@@ -176,26 +213,13 @@ if strcmp(rmvMethod,'Manual')
                             GPSix = [GPSix;([tmpGPSix(1,kk):surgIx(1,surgIter),surgIx(2,surgIter):tmpGPSix(2,kk)])'];
                             % Catch Dupilcated GPSix
                             GPSix = unique(GPSix);
-%                             % Adjust Edges
-%                             tmpIx = sub2ind(size(tmpGPSix),2,kk);
-%                             tmpGPSix(tmpIx:end) = tmpGPSix(tmpIx:end)-tmp;
-%                             % Retain Array Shape
-% %                             tmpGPSix = reshape(tmpGPSix,2,length(tmpGPSix(:))/2);
-%                             % Adjust Any Remaining Surgery Positions
-%                             if surgIter < nSurg
-%                                 tmpIx = sub2ind(size(surgIx),1,surgIter+1);
-%                                 surgIx(tmpIx:end) = surgIx(tmpIx:end)-tmp;
-%                                 % Retain Array Shape
-% %                                 surgIx = reshape(surgIx,2,nSurg);
-%                             end
-                            %                     elseif 1
                         end
                         surgIter = surgIter+1;
                     end
                 end
                 % Find Start/Stop Edges
                 GPSixEdges(1,kk) = find(GPSix == tmpGPSix(1,kk));
-                GPSixEdges(2,kk) = length(GPSix);%find(GPSix == tmpGPSix(2,kk));
+                GPSixEdges(2,kk) = length(GPSix);
             else
                 % Append Good GPS Positions
                 GPSix = [GPSix;(tmpGPSix(1,kk):tmpGPSix(2,kk))'];
@@ -204,13 +228,14 @@ if strcmp(rmvMethod,'Manual')
                 GPSixEdges(1,kk) = find(GPSix == tmpGPSix(1,kk));
                 GPSixEdges(2,kk) = find(GPSix == tmpGPSix(2,kk));
             end
-            
-%             % Find Start/Stop Edges
-%             GPSixEdges(1,kk) = find(GPSix == tmpGPSix(1,kk));
-%             GPSixEdges(2,kk) = find(GPSix == tmpGPSix(2,kk));
         end
     else
         error('Matched Edges were not Selected. Please Select Again')
+    end
+    % if manual picker is exited without any picks
+    if isempty(tmpGPSix)
+        GPSix = 1:length(LLZDT);
+        GPSixEdges = [GPSix(1);GPSix(end)];
     end
 end
 % No Removal
@@ -235,12 +260,12 @@ Zwgs84 = Zwgs84(:);
 Zwgs84 = Zwgs84-1.92; 
 
 % Smooth Lon, Lat, Elevation
-R = 25; % Smoothing Window Rank
+R = 5; % Smoothing Window Rank
 X = 1:length(Zwgs84); % Estimtes to Smooth
 
-% % Smooth Coordinate Estimate
-% Lon = nonParametricSmooth(X,Lon,X,R);
-% Lat = nonParametricSmooth(X,Lat,X,R);
+% Smooth Coordinate Estimate
+Lon = nonParametricSmooth(X,Lon,X,R);
+Lat = nonParametricSmooth(X,Lat,X,R);
 
 % Smooth Elevation Estimate
 if isGeoHx || isRTKgps
