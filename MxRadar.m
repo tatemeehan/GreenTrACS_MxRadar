@@ -14,75 +14,30 @@ clear; close all; clc;
 
 % 500 MHz Data
 % GreenTrACS 2016
-% dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-4-16-Core7-Spiral';
-% dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-2-16-Core7-Spur-W';
 
 % GreenTrACS 2017
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-18-17-SummitRouteI';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-17-17-Core16Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-16-17-Core16SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-15-17-Core15Core16Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-14-17-Core15Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-13-17-Core15SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-12-17-Core14Core15Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-11-17-Core14Spiral';
+dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-10-17-Core14SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-9-17-Core13Core14Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-8-17-Core13SpurE';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-6-17-Core12Core13Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-3-17-Core12SpurE';
-dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-2-17-Core12SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-2-17-Core12SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-1-17-Core11Core12Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-31-17-Core11SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-27-17-Core11SpurE';
-% dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS\2017\6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-18-17-SummitRouteI';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-15-17-Core15Core16Traverse';
-
-% dataDir = '/home/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
-% dataDir = '/sonichome/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS\2017\6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-12-17-Core14Core15Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-10-17-Core14SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-9-17-Core13Core14Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-8-17-Core13SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-7-17-Core13SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-6-17-Core12Core13Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-3-17-Core12SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-2-17-Core12SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-1-17-Core11Core12Traverse';
-% dataDir = '/home/tatemeehan/GreenTracs2017/5-31-17-Core11SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-31-17-Core11SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-27-17-Core11SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-26-17-Core11Spiral';
-% dataDir = '/run/media/tatemeehan/ONE/GreenTrACS2017/PulseEKKO/500MHz/5-26-17-Core11Spiral';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-24-17-Core10SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-25-17-Core10SpurW';
-% dataDir = '/run/media/tatemeehan/ONE/GreenTrACS2017/PulseEKKO/500MHz/5-26-17-Core10Core11Traverse';
-% dataDir = '/home/tatemeehan/GreenTracs2017/5-26-17-Core10Core11Traverse';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-17-17-Core9Spiral';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-11-17-Core8Test';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-4-17-SummitRun';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-5-17-SummitCal';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/500MHz/5-5-17-SummitCal';
-% dataDir = 'E:\GreenTrACS\GPR_DATA/PulseEKKO/500MHz/6-4-16-Core7-Spiral';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/500MHz/5-17-17-Core9Spiral';
-
-% 1GHz Data
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\1GHz\6-19-17-SummiteRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\1GHz\6-7-17-Core13SpurW';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-17-17-Core9Spiral';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-11-17-Core8Test';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-4-17-SummitRun';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-5-17-SummitCal';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/1GHz/5-10-17-Core8SpurE';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/1GHz/6-13-17-Core15SpurW';
 
 % Add additional useful pathways
-% addpath 'E:\GreenTrACS\2017\GPR_Processing\MultiOffset\Save';
-% addpath 'E:\GreenTrACS\2017\GPR_Processing\MultiOffset\SeismicLab\SeismicLab\codes\fx';
-% addpath 'D:\GreenTrACS\2017\GPR_Processing\MultiOffset\Save';
-% addpath '/run/media/tatemeehan/RED/GreenTrACS/2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save/matData'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
-% addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
-% addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
-% addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
 addpath './functions';
 addpath './supplementalData';
@@ -94,13 +49,13 @@ isParallel = 1;
 
 % Read Data
 isReadNC = 1;                  % Read Multiplexed Data
-isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
+isLoadTimeHorizons = 0;        % Load Previously Picked Time Horizons
 isPickTravelTimeHorizons = 0;  % Pick Travel-Time Horizons
-isLoadIRH = 1;                 % Load Previously Picked IRHs
+isLoadIRH = 0;                 % Load Previously Picked IRHs
 isPickAgeHorizons = 0;         % Pick Age Horizons
-isLoadDepthHorizons = 1;       % Load Previously Picked Depth Horizons
+isLoadDepthHorizons = 0;       % Load Previously Picked Depth Horizons
 isPickDepthHorizons = 0;       % Pick Isochronous Depth Horizons
-isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
+isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
 isLoadGPS = 0;                 % Load GPS for MxRadar
 isGreenTracsFirnCore = 1;      % Load GreenTracs Firn Core Data
@@ -156,7 +111,7 @@ yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = 1;%[0,1,2,4,7];               % Array of data "LINE" numbers
+lineNo = [3,4,5];%[0,1,2,4,7];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
