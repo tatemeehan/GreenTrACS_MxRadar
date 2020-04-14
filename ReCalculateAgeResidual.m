@@ -74,6 +74,14 @@ for ii = 1:nFiles
         end
         end
         bestAgeModel{ii} = tmpAgeModel;
+        % Update Age Picks
+        for zh = 1:nZHorizon
+        % Grab the mean updated Age-Depth Model at iceCoreIx
+%             ageDatum(zh,ii) = mean(updateAgeModel{ii}(datumIx,iceCoreIx));
+               tmpIx = sub2ind(size(bestAgeModel{ii}),round(depthPick{jj,zh,ii}./dZ),...
+                   [1:length(depthPick{jj,zh,ii})]');
+            agePick{jj,zh,ii} = bestAgeModel{ii}(tmpIx);
+        end
         clear ('tmpResidual','tmpDepthPicks','tmpAxis','tmpIx','tmpAgeModel')
         % 1st order Finite Difference 
         tmpDiffA = diff(bestAgeModel{ii});  % da
@@ -85,7 +93,7 @@ for ii = 1:nFiles
         GTCdensity = interp1(GTCzp(:,1),GTCzp(:,2),DepthAxis{ii},'pchip');
         GTCdensityModel = repmat(GTCdensity,1,n);
         GTCaccum = (dUpdateAgeModel.*GTCdensityModel)./([tmpDiffA(1,:);tmpDiffA]);
-%         instantAccum = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
+        instantAccumO1 = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
 % 2nd Order Finite Difference
 tic
 innstantAccum = zeros(length(DepthMatrix{ii}(:,1)),length(updateAgeModel{ii}));

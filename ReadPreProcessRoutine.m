@@ -131,8 +131,8 @@
             nearRad = processTraceRemoval... % Processes Near Offset Data
                 (Rad{ii}(:,nearChan:nChan:end), f0, dt );
             % Remove Duplicate Static Traces
-            [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
-%             [dupIx,staticNearChanIx] = removeStaticTraceMuck( nearRad, multiplexNtrcs, nearChan, nChan );
+%             [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
+            [dupIx,staticNearChanIx] = removeStaticTraceMuck( nearRad, multiplexNtrcs, nearChan, nChan );
             % Plot Static Trace Removal
             figure();imagesc(nearRad);colormap(bone)
             hold on; plot(staticNearChanIx,120.*ones(length(staticNearChanIx)),'rx')            
