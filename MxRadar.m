@@ -231,6 +231,7 @@ if isSWEDISH && ~isLoadHVA
         k = 100; % Number of Radar Estimates to Estimate Core Site Average
         iceCoreFileIx = 1;
         iceCoreIx = 1:k;
+        warning('Undefined Firn Core!.. Using default accumulation 0.3 mwe and age 2.5 yrs.')
     end
     
     % Toggle Inversion Scheme
