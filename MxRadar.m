@@ -21,10 +21,10 @@ clear; close all; clc;
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-16-17-Core16SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-15-17-Core15Core16Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-14-17-Core15Spiral';
-% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-13-17-Core15SpurW';
+dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-13-17-Core15SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-12-17-Core14Core15Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-11-17-Core14Spiral';
-dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-10-17-Core14SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-10-17-Core14SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-9-17-Core13Core14Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-8-17-Core13SpurE';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-6-17-Core12Core13Traverse';
@@ -49,22 +49,22 @@ isParallel = 1;
 
 % Read Data
 isReadNC = 1;                  % Read Multiplexed Data
-isLoadTimeHorizons = 0;        % Load Previously Picked Time Horizons
+isLoadTimeHorizons = 1;        % Load Previously Picked Time Horizons
 isPickTravelTimeHorizons = 0;  % Pick Travel-Time Horizons
-isLoadIRH = 0;                 % Load Previously Picked IRHs
+isLoadIRH = 1;                 % Load Previously Picked IRHs
 isPickAgeHorizons = 0;         % Pick Age Horizons
-isLoadDepthHorizons = 0;       % Load Previously Picked Depth Horizons
+isLoadDepthHorizons = 1;       % Load Previously Picked Depth Horizons
 isPickDepthHorizons = 0;       % Pick Isochronous Depth Horizons
-isLoadHVA = 0;                 % Load Previous Horizon Velocity Analysis
+isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
-isLoadGPS = 0;                 % Load GPS for MxRadar
+isLoadGPS = 1;                 % Load GPS for MxRadar
 isGreenTracsFirnCore = 1;      % Load GreenTracs Firn Core Data
 isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 
 % Export Data
 isWriteTimeHorizons = 0;% Save Travel-Time Picks
 isSaveHVA = 0;          % Save Horizon Velocity Analysis
-isSaveMxHL = 0;         % Save Modeled Output
+isSaveMxHL = 1;         % Save Modeled Output
 
 % Process Data
 isReduceData = 1;       % Remove Every nth Trace from Data Gather
@@ -111,7 +111,7 @@ yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [3,4,5];%[0,1,2,4,7];               % Array of data "LINE" numbers
+lineNo = [0,1,2,4,7];%[3,4,5];               % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
@@ -453,7 +453,7 @@ elseif isLoadDepthHorizons
     cd '/home/tatemeehan/GreenTracs2017/MXHL';
     IRH = load('depthPicksCore15SpurMaster072919.mat');
     depthPick = [IRH.depthPick];
-    clear IRH
+%     clear IRH
     cd(workDir)
     fprintf('Isochrone Reflection Horizon Picks Loaded \n')
     disp(' ')
@@ -464,7 +464,7 @@ end
 %         fprintf('Begin Isochrone Model Update & Trace Flattening \n')
 %         tic
 %         % Calculate Stratigraphic Age Residual
-        ReCalculateAgeResidual
+        ReCalculateAgeResidual        
 %         % Update Model with Perturbations
 %         UpdateAgeHorizons
 %         
@@ -516,15 +516,17 @@ cd(workDir)
     
     % Save Modeled Output
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_061919.mat';
-        GTC15SpurWMxHL = struct('Traverse',{Traverse},'DepthAxis',{DepthAxis},...
-            'RadarDepth',{RadarDepth},'AgeModel',{AgeModel},...
+        MxHLFilename = 'GTC15SpurWMxHL_022820.mat';
+        GTC15SpurWMxHL = struct('DistanceAxis',{Traverse},'DepthAxis',{DepthAxis},...
+            'RadarDepth',{RadarDepth},'AgeModel',{bestAgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
             'AvgDensityModel',{AvgDensityModel},'MeanDensityDeviation',...
             {MeanDensityDeviation},'SurfaceDensityDeviation',{SurfaceDensityDeviation},...
-            'IsoChrones', {Isochrones},'Ages',{Ages},'AverageAccumulation',{AverageAccumulation});
+            'IsochroneIx',{IRH.depthPick},'DepthIsoChrones', {depthPick},'AgeIsochrones',{agePick},'AverageAccumulation',{AverageAccumulation3},...
+            'VarAccumulation',{varAccumulation3},'iceCoreIx',{iceCoreIx});
+        cd '/home/tatemeehan/GreenTracs2017/MXHL/'
         save(MxHLFilename,'-struct','GTC15SpurWMxHL','-v7.3');
-
+        cd(workDir)
     end
     
 %% Radar Imagery and Snow Data Visualization
