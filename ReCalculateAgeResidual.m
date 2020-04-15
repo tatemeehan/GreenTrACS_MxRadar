@@ -96,7 +96,7 @@ for ii = 1:nFiles
         instantAccumO1 = (dUpdateAgeModel.*DensityModel{ii})./([tmpDiffA(1,:);tmpDiffA]);
 % 2nd Order Finite Difference
 tic
-innstantAccum = zeros(length(DepthMatrix{ii}(:,1)),length(updateAgeModel{ii}));
+instantSMB = zeros(length(DepthMatrix{ii}(:,1)),length(updateAgeModel{ii}));
 parfor (kk = 1:length(updateAgeModel{ii}), nWorkers)
 % for kk = 1:length(updateAgeModel{ii})
     tmp = zeros(length(DepthMatrix{ii}(:,1)),1);
@@ -114,22 +114,22 @@ for ll = 1:length(DepthMatrix{ii}(:,1))
 %     da(ll) = ca*ptsA;
     tmp(ll) = (ca(2,:)*ptsZ)*DensityModel{ii}(ll,kk);
 end
-instantAccum(:,kk) = tmp;
+instantSMB(:,kk) = tmp;
 %% 
 end
 
         % Despike Mathy Noise
-        cutoff = quantile(instantAccum(:),[.005,.995]);
-        tmpIx = find(instantAccum<cutoff(1) | instantAccum > cutoff(2));
-        instantAccum(tmpIx) = NaN;
+        cutoff = quantile(instantSMB(:),[.005,.995]);
+        tmpIx = find(instantSMB<cutoff(1) | instantSMB > cutoff(2));
+        instantSMB(tmpIx) = NaN;
 %         testInstant = inpaint_nans(testInstant,0); % Quite Slow
-        instantAccum = fillmissing(instantAccum,'linear');
+        instantSMB = fillmissing(instantSMB,'linear');
         clear('cutoff','tmpIx')
         A1 = 2017; % Upper Year Bound
         % Lower Year Bound A2 = 1984
         A2 = round(abs(max(datumDepthAge)-(str2num(Year{1})+dayofyear/365)));
         Annuals = A2:A1;
-        tmpAccum = instantAccum;
+        tmpAccum = instantSMB;
         m = size(bestAgeModel{ii},1);
         n = size(bestAgeModel{ii},2);
         reportAccum = zeros(n,1);
@@ -141,7 +141,7 @@ end
             ix = find(abs(bestAgeModel{ii}(:,kk)-(str2num(Year{1})+dayofyear/365)) < A1 ...
                 & abs(bestAgeModel{ii}(:,kk)-(str2num(Year{1})+dayofyear/365)) >= A2);
             tmpAgeModel = bestAgeModel{ii}(ix,kk);
-            tmpA = instantAccum(ix,kk);
+            tmpA = instantSMB(ix,kk);
             tmpGTCa = GTCaccum(ix,kk);
 
             % Pad update to Instantaeous Accumulation Model with intial 

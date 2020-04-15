@@ -64,7 +64,7 @@ isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 % Export Data
 isWriteTimeHorizons = 0;% Save Travel-Time Picks
 isSaveHVA = 0;          % Save Horizon Velocity Analysis
-isSaveMxHL = 1;         % Save Modeled Output
+isSaveMxHL = 0;         % Save Modeled Output
 
 % Process Data
 isReduceData = 1;       % Remove Every nth Trace from Data Gather
@@ -517,13 +517,13 @@ cd(workDir)
     
     % Save Modeled Output
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_022820.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_041420.mat';
         GTC15SpurWMxHL = struct('DistanceAxis',{Traverse},'DepthAxis',{DepthAxis},...
             'RadarDepth',{RadarDepth},'AgeModel',{bestAgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
             'AvgDensityModel',{AvgDensityModel},'MeanDensityDeviation',...
             {MeanDensityDeviation},'SurfaceDensityDeviation',{SurfaceDensityDeviation},...
-            'IsochroneIx',{IRH.depthPick},'DepthIsoChrones', {depthPick},'AgeIsochrones',{agePick},'AverageAccumulation',{AverageAccumulation3},...
+            'IsochroneIx',{IRH.depthPick},'DepthIsoChrones', {depthPick},'AgeIsochrones',{agePick},'SMBmodel',{instantSMB},'AverageAccumulation',{AverageAccumulation3},...
             'VarAccumulation',{varAccumulation3},'iceCoreIx',{iceCoreIx});
         cd '/home/tatemeehan/GreenTracs2017/MXHL/'
         save(MxHLFilename,'-struct','GTC15SpurWMxHL','-v7.3');
