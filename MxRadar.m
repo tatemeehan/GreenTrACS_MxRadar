@@ -64,7 +64,7 @@ isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 % Export Data
 isWriteTimeHorizons = 0;% Save Travel-Time Picks
 isSaveHVA = 0;          % Save Horizon Velocity Analysis
-isSaveMxHL = 0;         % Save Modeled Output
+isSaveMxHL = 1;         % Save Modeled Output
 
 % Process Data
 isReduceData = 1;       % Remove Every nth Trace from Data Gather
@@ -517,9 +517,9 @@ cd(workDir)
     
     % Save Modeled Output
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_041420.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_042820.mat';
         GTC15SpurWMxHL = struct('DistanceAxis',{Traverse},'DepthAxis',{DepthAxis},...
-            'RadarDepth',{RadarDepth},'AgeModel',{bestAgeModel},...
+            'RadarDepth',{RadarDepth},'TimeAxis',{TimeAxis},'RadarStack',{RadarStack},'DepositionAxis',{DepositionAxis},'RadarDeposition',{RadarDeposition},'AgeModel',{bestAgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
             'AvgDensityModel',{AvgDensityModel},'MeanDensityDeviation',...
             {MeanDensityDeviation},'SurfaceDensityDeviation',{SurfaceDensityDeviation},...
