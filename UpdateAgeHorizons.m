@@ -6,6 +6,7 @@
 %
 deltaAgeModel = cell(1,nFiles);
 depositionAgeModel = cell(1,nFiles);
+updatePseudoAgeModel = cell(1,nFiles);
 
     for ii = 1:nFiles
         % Apply IRH Theory 

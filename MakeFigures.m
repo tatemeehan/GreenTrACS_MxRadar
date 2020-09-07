@@ -120,7 +120,8 @@ if isDepthSection
         end
         
         % Compare Time to Depth Images
-        compareIx = 7550:11500;
+%         compareIx = 7550:11500;
+        compareIx = 7390:11550;
         compareIy = 165:565;
         % Salt and Pepper Time Image
         figure();
@@ -136,7 +137,7 @@ if isDepthSection
         xlabel('Distance (km)')
         ylabel('Travel-Time (ns)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold','layer','top')
-                daspect([1 9.5 1])
+                daspect([1 8.5 1])
 
 %         axis square
 %         compareIy = 150:550;
@@ -209,7 +210,8 @@ if isDepthSection
         text(.65,-.25,'1000x Vertical Exaggeration','units','normalized','fontsize',10,'fontweight','bold')
         
         % Age-Travel-Time Model
-        compareIx = 7550:11500;
+%         compareIx = 7550:11500;
+        compareIx = 7390:11550;
         compareIy = 165:565;
         figure();pcolor(Traverse{ii}(compareIx)./1000,TimeAxis{ii}(compareIy),pseudoAgeModel{ii}(compareIy,compareIx));
         hold on;shading interp;axis ij;
@@ -246,7 +248,7 @@ if isDepthSection
         tmpResidual = perturbations(compareIy,compareIx);%updatePseudoAgeModel{ii}(compareIy,compareIx)-pseudoAgeModel{ii}(compareIy,compareIx);
         figure();
         pcolor(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),tmpResidual);
-        shading interp; axis ij;%caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
+        shading interp; axis ij;colormap(cmapAdapt(tmpResidual,SplitJet));%caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
         colormap(cmapAdapt(tmpResidual,SplitJet))
 %         freezeColors;
         c = colorbar; c.Location = 'northoutside';c.Label.String = 'Age Perturbations (\Delta a)';

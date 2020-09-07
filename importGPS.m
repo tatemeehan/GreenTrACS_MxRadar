@@ -9,15 +9,15 @@
 %  Boise State University: Tate Meehan GreenTrACS 2017
 
 clear; close all; clc;
-addpath './functions'
-% Load GPS.csv
+addpath './functions'% Load GPS.csv
 workingDir = pwd;
 % Locate GPS data directory and designate output directory
-getDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/GPS/Processed';
-dataDir = uigetdir(getDir,'GPS Data Directory');
 getDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation';
 writeDir = uigetdir(getDir,'Write Directory');
-isWrite = 0;
+getDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/GPS/Processed';
+dataDir = uigetdir(getDir,'GPS Data Directory');
+
+isWrite = 1;
 isNetR8 = 0;    % 5 column Format
 isGeoHx = 0;    % Core 2 & Core 5 Spirals
 isRTKgps = 1;   % RTKgps Format
@@ -320,6 +320,26 @@ LonLim = [min(Lon) max(Lon)];
 %% Create GPS Structure
 % Select Valid Traces for Export
 Selection = (1:length(Lat));
+% % Edit Wagon Wheel Picks : (
+% %Temporariy Load the Old Datafile
+% % Core7Survey
+% % load(['/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/5-14-17-Core7Survey','/','5-14-17-Core7Survey-GPS-LINE01_05-tmp.mat'])
+% % rmvIx = [[74:82],[354:362],[678:686],[990:1006]];
+% % Test
+% load(['/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/6-3-17-Core12SpurE','/','6-3-17-Core12SpurE-GPS-LINE00_01.mat'])
+% load(['/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/6-9-17-Core13Core14Traverse','/','6-9-17-Core13Core14Traverse-GPS-LINE01_07.mat'])
+% %Core9Spiral
+% load(['/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/5-17-17-Core9Spiral','/','5-17-17-Core9Spiral-GPS-LINE00_05.mat']);
+% Ix = 1:length(GeoLocation.X);
+% rmvIx = [[401:411],[564:574],[705:720],[884:895],[1057:1067],[1218:1225]];
+% gapIx = Ix;
+% gapIx(rmvIx) = [];
+% Selection = gapIx;
+% tmpGPSixEdges = find(diff(gapIx)>1);
+% % Append End
+% tmpGPSixEdges = [tmpGPSixEdges,length(gapIx)];
+% % Append Top Row
+% tmpGPSixEdges = [[1,tmpGPSixEdges(1:end-1)+1];tmpGPSixEdges];
 
 
     field1 = 'X';               value1 = X(Selection);
@@ -333,6 +353,13 @@ Selection = (1:length(Lat));
     field9 = 'Date';            value9 = {LLZDT(Selection,4)};
     field10 = 'Time';           value10 = {LLZDT(Selection,5)};
 %     field11 = 'GPSix';          value11 = GPSix(Selection);
+%     field12 = 'GPSixEdges';     value12 = tmpGPSixEdges;
+%     field13 = 'Slope';          value13 = Slope(Selection);
+%     field14 = 'Speed';          value14 = Velocity(Selection);
+%     field15 = 'Heading';        value15 = heading(Selection);
+%     field16 = 'dX';             value16 = dX(Selection);
+%     field17 = 'dY';             value17 = dY(Selection);
+%     field18 = 'dZ';             value18 = dZ(Selection);
     field12 = 'GPSixEdges';     value12 = GPSixEdges;
     field13 = 'Slope';          value13 = Slope;
     field14 = 'Speed';          value14 = Velocity;
@@ -340,6 +367,26 @@ Selection = (1:length(Lat));
     field16 = 'dX';             value16 = dX;
     field17 = 'dY';             value17 = dY;
     field18 = 'dZ';             value18 = dZ;
+
+% Chunk for WagonWheel Ovewrite
+%     field1 = 'X';               value1 = [GeoLocation.X(Selection)];
+%     field2 = 'Y';               value2 = [GeoLocation.Y(Selection)];
+%     field3 = 'Z_EGM08';         value3 = [GeoLocation.Z_EGM08(Selection)];
+% %     field4 = 'Zone';            value4 = {Zone(Selection)};
+%     field5 = 'Lon';             value5 = [GeoLocation.Lon(Selection)];
+%     field6 = 'Lat';             value6 = [GeoLocation.Lat(Selection)];
+%     field7 = 'Z_WGS84';         value7 = [GeoLocation.Z_WGS84(Selection)];
+%     field8 = 'N_EGM08';         value8 = [GeoLocation.N_EGM08(Selection)];
+%     field9 = 'Date';            value9 = {GeoLocation.Date(Selection)};
+%     field10 = 'Time';           value10 = {GeoLocation.Time(Selection)};
+% %     field11 = 'GPSix';          value11 = GPSix(Selection);
+%     field12 = 'GPSixEdges';     value12 = tmpGPSixEdges;
+%     field13 = 'Slope';          value13 = [GeoLocation.Slope(Selection)];
+%     field14 = 'Speed';          value14 = [GeoLocation.Speed(Selection)];
+%     field15 = 'Heading';        value15 = [GeoLocation.Heading(Selection)];
+%     field16 = 'dX';             value16 = [GeoLocation.dX(Selection)];
+%     field17 = 'dY';             value17 = [GeoLocation.dY(Selection)];
+%     field18 = 'dZ';             value18 = [GeoLocation.dZ(Selection)];
     
     GeoLocation = struct(field1,value1,field2,value2,field3,value3,...%field4,value4,...
         field16,value16,field17,value17,field18,value18,...
@@ -348,12 +395,11 @@ Selection = (1:length(Lat));
         field9,value9,field10,value10,...
         field12,value12);%,field11,value11);
 
-
 % Save GPS Data
 if isWrite
 cd(writeDir)
-putName = inputdlg('Input File Name (Exclude the File Extension)');
-writeName = [putName{1},'.mat'];
+putName = input('Input File Name (Exclude the File Extension): ','s');
+writeName = [putName,'.mat'];
 % writeName = 'MxRadarGPSCore15SpurW061317.mat';
 save(writeName,'GeoLocation','-v7.3')
 cd(workingDir)
@@ -370,7 +416,9 @@ geoshow([Lat(Selection(1))],[Lon(Selection(1))],'marker','*','color','black','ma
 
 figure(2);clf
 % plot(X(Selection)/1000,Y(Selection)/1000, 'k', 'linewidth', 2)
-plot(X/1000,Y/1000, 'k', 'linewidth', 2)
+% plot(X/1000,Y/1000, 'k', 'linewidth', 2)
+plot(GeoLocation.X/1000,GeoLocation.Y/1000, '.k', 'linewidth', 2)
+
 % plot(Lon(Selection),Lat(Selection), 'k', 'linewidth', 2)
 title('Traverse Route')
 % xlabel('Longitude ^{.\circ}')
@@ -380,9 +428,12 @@ ylabel('Northing [km]')
 set(gca, 'FontSize', 12, 'FontWeight','bold')
 grid on
 hold on;
-for kk = 1:size(GPSixEdges,2)
-    plot(X(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000,Y(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000, 'linewidth', 2)
+for kk = 1:size(GeoLocation.GPSixEdges,2)
+%     plot(X(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000,Y(GPSixEdges(1,kk):GPSixEdges(2,kk))/1000, 'linewidth', 2)
+    plot(GeoLocation.X(GeoLocation.GPSixEdges(1,kk):GeoLocation.GPSixEdges(2,kk))/1000,GeoLocation.Y(GeoLocation.GPSixEdges(1,kk):GeoLocation.GPSixEdges(2,kk))/1000, 'linewidth', 2)
+
 end
+
 
 figure(3);clf
 plot(DistanceKm,Zegm08(Selection),'k','linewidth',2)

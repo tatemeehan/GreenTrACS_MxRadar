@@ -33,6 +33,18 @@ dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/50
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-1-17-Core11Core12Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-31-17-Core11SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-27-17-Core11SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-26-17-Core11Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-26-17-Core10Core11Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-25-17-Core10SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-24-17-Core10SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-23-17-Core10Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-23-17-Core9Core10Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-22-17-Core9Core10Traverse';
+% dataDir ='/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-17-17-Core9SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-17-17-Core9Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-16-17-Core9SpurW';
+% dataDir ='/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-15-17-Core8Core9Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-14-17-Core7Survey';
 
 % Add additional useful pathways
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
@@ -64,7 +76,7 @@ isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 % Export Data
 isWriteTimeHorizons = 0;% Save Travel-Time Picks
 isSaveHVA = 0;          % Save Horizon Velocity Analysis
-isSaveMxHL = 1;         % Save Modeled Output
+isSaveMxHL = 0;         % Save Modeled Output
 
 % Process Data
 isReduceData = 1;       % Remove Every nth Trace from Data Gather
@@ -111,7 +123,7 @@ yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [0,1,2,4,7];%[3,4,5];               % Array of data "LINE" numbers
+lineNo = [0,1,2,4,7];%[3,4,5];  %[1:5];%             % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
@@ -134,9 +146,11 @@ if isLoadHVA
 end
 
 %% Import GPS Information
-addpath '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+% addpath '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+addpath '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/6-13-17-Core15SpurW';
 if isLoadGPS
-    load('MxRadarGPSCore15SpurW061317.mat')
+%     load('MxRadarGPSCore15SpurW061317.mat')
+load('6-13-17-Core15SpurW-GPS-LINE00_07.mat')
 end
 %% Read GPR Data
 if isReadNC
@@ -452,7 +466,8 @@ if isPickDepthHorizons
     
 elseif isLoadDepthHorizons
     cd '/home/tatemeehan/GreenTracs2017/MXHL';
-    IRH = load('depthPicksCore15SpurMaster072919.mat');
+%     IRH = load('depthPicksCore15SpurMaster072919.mat');
+    IRH = load('depthPicksCore15SpurMaster.mat');
     depthPick = [IRH.depthPick];
 %     clear IRH
     cd(workDir)
@@ -517,7 +532,7 @@ cd(workDir)
     
     % Save Modeled Output
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_042820.mat';
+        MxHLFilename = 'GTC15SpurWMxHL_090320.mat';
         GTC15SpurWMxHL = struct('DistanceAxis',{Traverse},'DepthAxis',{DepthAxis},...
             'RadarDepth',{RadarDepth},'TimeAxis',{TimeAxis},'RadarStack',{RadarStack},'DepositionAxis',{DepositionAxis},'RadarDeposition',{RadarDeposition},'AgeModel',{bestAgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...

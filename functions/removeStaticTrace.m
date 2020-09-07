@@ -52,6 +52,7 @@ meanMovingCov = zeros(1000,1);meanStaticCov = meanMovingCov;
 for kk = 1:1000
 
 qCov = quantile(qCovAvg(100:end),quantiles(kk));
+tmp(kk) = qCov;
 
 % Find Peak Change in Covariance - Evaluated q Probability
 [~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',qCov);
@@ -99,7 +100,7 @@ stdMovingCov = std(covRad(Ix(1:Threshold-1)));
 
 meanStaticCov = mean(covRad(Ix(Threshold:end)));
 % Weighted average of moving and static covariances
-ThresholdCov = mean([meanMovingCov,meanStaticCov,meanMovingCov,meanMovingCov]);
+ThresholdCov = mean([meanMovingCov,meanStaticCov,meanMovingCov,meanMovingCov,meanMovingCov]);
 staticTraces = find(covRad>ThresholdCov);
 
 % Redux of Slope Thresholding

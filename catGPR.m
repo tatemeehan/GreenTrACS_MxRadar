@@ -36,6 +36,8 @@
          tmptrhd = [trhd{:}];
          trhd = cell(1,nFiles);
          trhd{nFiles} = tmptrhd;
-         TimeAxis(2:end) = [];
-         clear('tmptrhd');
+         TimeAxis(nFiles+1:end) = [];
+         tmpXYZ = cell2mat(XYZ);
+         XYZ = tmpXYZ;
+         clear('tmptrhd','tmpXYZ');
     end
