@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 MxGreenland.Rproj
+functions/timeDepthConversionNonLin.m
+testSignalInterpolation.m

@@ -47,11 +47,12 @@ qCovAvg = (qCovRad((1*S+1):end)-qCovRad(1:(end-1*S)))./(1*S+1);
 qCovAvg = [qCovAvg(1).*ones(floor((1*S+1)/2),1);qCovAvg;qCovAvg(end).*ones(floor((1*S+1)/2),1)];
 
 % Deteminie Quantile Threshold by Maximum Difference of Mean Covariance
-quantiles = linspace(0.95,1,1000);
-meanMovingCov = zeros(1000,1);
+quantiles = linspace(0.985,1,1000);
+meanMovingCov = zeros(1000,1);meanStaticCov = meanMovingCov;
 for kk = 1:1000
 
 qCov = quantile(qCovAvg(100:end),quantiles(kk));
+tmp(kk) = qCov;
 
 % Find Peak Change in Covariance - Evaluated q Probability
 [~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',qCov);
@@ -62,10 +63,16 @@ peakIx = dumTraces(peakIx);
 [Threshold] = min(peakIx); 
 
 meanMovingCov(kk) = mean(covRad(Ix(1:Threshold-1)));
+meanStaticCov(kk) = mean(covRad(Ix(Threshold:end)));
+
 end
 
 % Maximization Classification of Quantile Means
-[~,qIx] = max(diff(meanMovingCov));
+% [~,qIx] = max(diff(meanMovingCov));
+% [~,qIx] = max(meanMovingCov(11:end)-meanMovingCov(1:end-10));
+
+[~,qIx] = max(abs(meanStaticCov-meanMovingCov));
+
 
 % q is Optimal Quantile
 q = quantiles(qIx);
@@ -84,6 +91,52 @@ peakIx = dumTraces(peakIx);
 
 % Identify Static Traces
 staticTraces = Ix(Threshold:end);
+
+% Refinement Step
+% We sometimes wish to add a few more static points or remove a few
+% Simple Method of Adding 20 STD to mean and
+meanMovingCov = mean(covRad(Ix(1:Threshold-1)));
+stdMovingCov = std(covRad(Ix(1:Threshold-1)));
+
+meanStaticCov = mean(covRad(Ix(Threshold:end)));
+% Weighted average of moving and static covariances
+ThresholdCov = mean([meanMovingCov,meanStaticCov,meanMovingCov,meanMovingCov,meanMovingCov]);
+staticTraces = find(covRad>ThresholdCov);
+
+% Redux of Slope Thresholding
+% % Compute Qunatile Function
+% [qCovRad, ~] = sort(covRad(staticTraces));
+% 
+% % Compute Running Differenced Average
+% qCovAvg = (qCovRad((1*S+1):end)-qCovRad(1:(end-1*S)))./(1*S+1);
+% % Append Edges to Maintain Indicies
+% qCovAvg = [qCovAvg(1).*ones(floor((1*S+1)/2),1);qCovAvg;qCovAvg(end).*ones(floor((1*S+1)/2),1)];
+% 
+% % Define Peak Covarince Threshold of Running Differenced Average Covariance
+% % Steer Clear of Padded Edge (100:end) - Creates Artificial Peak
+% qCov = quantile(qCovAvg(100:end),q);
+% 
+% % Find Peak Change in Covariance - Evaluated at Optimal Probability
+% [~,peakIx] = findpeaks(qCovAvg(100:end),'MinPeakHeight',qCov);
+% dumTraces = traces(100:end);
+% peakIx = dumTraces(peakIx);
+% 
+% % Evaluate the Data Covariance Threshold
+% [Threshold] = min(peakIx);
+% 
+% % [~,~,goodIx] = ismember(covRad(staticTraces),qCovRad(1:Threshold-1));
+% staticTraces(1:Threshold-1) = [];
+
+% % Order of Magnitude Filter in case some points sneak through
+% % Remove Points
+% tmp = meanStaticCov(qIx); mag = floor(log10(tmp));
+% rmvIx = covRad(staticTraces)<1.*10.^mag;
+% staticTraces(rmvIx) = [];
+% goodTraces = traces;
+% goodTraces(staticTraces) = [];
+% % Add Points
+% addIx = (goodTraces(covRad(goodTraces)>1.*10.^mag))';
+% staticTraces = [staticTraces;addIx];
 
 % Identify Multiplexed Static Traces
 staticPlexTraces = nearPlex(staticTraces) + modChan; 

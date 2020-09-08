@@ -120,7 +120,8 @@ if isDepthSection
         end
         
         % Compare Time to Depth Images
-        compareIx = 7550:11500;
+%         compareIx = 7550:11500;
+        compareIx = 7390:11550;
         compareIy = 165:565;
         % Salt and Pepper Time Image
         figure();
@@ -136,7 +137,7 @@ if isDepthSection
         xlabel('Distance (km)')
         ylabel('Travel-Time (ns)','rotation',270, 'Units', 'Normalized', 'Position', [-0.05, 0.5, 0])
         set(gca,'fontsize',14,'fontweight','bold','layer','top')
-                daspect([1 9.5 1])
+                daspect([1 8.5 1])
 
 %         axis square
 %         compareIy = 150:550;
@@ -209,7 +210,8 @@ if isDepthSection
         text(.65,-.25,'1000x Vertical Exaggeration','units','normalized','fontsize',10,'fontweight','bold')
         
         % Age-Travel-Time Model
-        compareIx = 7550:11500;
+%         compareIx = 7550:11500;
+        compareIx = 7390:11550;
         compareIy = 165:565;
         figure();pcolor(Traverse{ii}(compareIx)./1000,TimeAxis{ii}(compareIy),pseudoAgeModel{ii}(compareIy,compareIx));
         hold on;shading interp;axis ij;
@@ -246,7 +248,7 @@ if isDepthSection
         tmpResidual = perturbations(compareIy,compareIx);%updatePseudoAgeModel{ii}(compareIy,compareIx)-pseudoAgeModel{ii}(compareIy,compareIx);
         figure();
         pcolor(Traverse{ii}(compareIx)./1000,DepthAxis{ii}(compareIy),tmpResidual);
-        shading interp; axis ij;%caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
+        shading interp; axis ij;colormap(cmapAdapt(tmpResidual,SplitJet));%caxis([-0.5,0.5])% colormap(cmapAdapt(tmpResidual,SplitJet));
         colormap(cmapAdapt(tmpResidual,SplitJet))
 %         freezeColors;
         c = colorbar; c.Location = 'northoutside';c.Label.String = 'Age Perturbations (\Delta a)';
@@ -490,6 +492,93 @@ if isSWEDISH
             'FontWeight','Bold', 'LineWidth', 1);
     end
 end
+%% JOG Figures
+if isSWEDISH
+    % plot Direct Wave Data
+    for ii = 1:nFiles
+        distance = Traverse{ii};
+        figure();
+        subplot(4,1,1)
+%         for dh = 2:nDirectHorizon
+%             shadedErrorBarT8(distance,dhDepth{dh,ii},...
+%                 sqrt(dhDepthVar{dh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
+%             hold on;
+%         end
+        for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance./1000,Depth{rh,ii},...
+                sqrt(DepthVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+
+%                 sqrt(DepthVar{rh,ii}),1,{'Color',[1,0.81,0],'linewidth',1.5});
+
+            hold on;
+        end
+        freezeColors
+        axis ij
+        axis tight
+        grid on
+        ylim([1.6 2.2])
+        set(gca,'ytick',[1.6,1.8,2.0,2.2])
+        set(gca,'xticklabel',[])
+        title('Snow Depth (m)')
+        subplot(4,1,2)
+        for dh = 2:nDirectHorizon
+            shadedErrorBarT8(distance,dhDensity{dh,ii}.*1000,...
+                sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(dhDensityVar{dh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+            hold on;
+        end
+        for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance,Density{rh,ii}.*1000,...
+                sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+            hold on;
+        end
+        freezeColors
+        axis ij
+        axis tight
+        grid on
+        set(gca,'xticklabel',[])
+        set(gca,'ytick',[350,375,400])
+        title('Average Density (kg/m^{3})')
+        subplot(4,1,3)
+        
+            shadedErrorBarT8(distance,ForcingDensity{rh,ii}.*1000,...
+                sqrt(ForcingDensityVar{rh,ii}).*1000,1,{'Color',[0,0,0],'linewidth',1.5});
+%                 sqrt(DensityVar{rh,ii}).*1000,1,{'Color',[0.5,0,0],'linewidth',1.5});
+
+        freezeColors
+        axis ij
+        axis tight
+        grid on
+        set(gca,'xticklabel',[])
+        set(gca,'ytick',[350,375,400])
+        title('Average Density (kg/m^{3})')
+        subplot(4,1,4)
+%         for dh = 2:nDirectHorizon
+%             shadedErrorBarT8(distance,dhSnowWaterEqv{dh,ii},...
+%                 sqrt(dhSnowWaterEqvVar{dh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+%             hold on;
+%         end
+        for rh = 1:nReflectionHorizon
+            shadedErrorBarT8(distance,AverageAccumulation{ii},...
+                sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});            
+%             shadedErrorBarT8(distance,SnowWaterEqv{rh,ii},...
+%                 sqrt(SnowWaterEqvVar{rh,ii}),1,{'Color',[0,0,0],'linewidth',1.5});
+            hold on;
+        end
+        freezeColors
+        axis tight
+        axis ij
+        grid on
+        set(gca,'ytick',[0.24,0.27,0.3,0.33])
+        title('Average SMB (m w.e. a^{-1})')
+        set(gca,'xtick',1000.*[0, 20, 40, 60, 78])
+        set(gca,'xticklabel',[0,20,40,60,78])
+        xlabel('Distance (km)')
+        set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
+            'FontWeight','Bold', 'LineWidth', 1);
+    end
+end
 %% Compare Average Accumulation
 if (isPickDepthHorizons || isLoadDepthHorizons) && (isPickAgeHorizons || isLoadIRH)
         for ii = 1:nFiles
@@ -603,4 +692,25 @@ if (isPickDepthHorizons || isLoadDepthHorizons) && (isPickAgeHorizons || isLoadI
         set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',12,...
             'FontWeight','Bold', 'LineWidth', 1);
     end
+end
+
+%% Topography
+for ii = 1:nFiles
+figure();
+plot(trhd{ii}(16,:),trhd{ii}(15,:),'k','linewidth',3)
+grid on
+% xlim([0,max(trhd{ii}(16,:))])
+xlim([0,1000.*78])
+        set(gca,'xtick',1000.*[0, 20, 40, 60, 78])
+        set(gca,'xticklabel',[0,20,40,60,78])
+        title('Topographic Profile')
+xlabel('Distance (km)')
+ylabel('Elevation (m a.s.l.)','rotation',270, 'Units', 'Normalized', 'Position', [-0.08, 0.5, 0])
+
+% ylabel('Elevation (m a.s.l.)')
+     set(findobj(gcf,'type','axes'),'FontName','FreeSerif','FontSize',14,...
+            'FontWeight','Bold', 'LineWidth', 1);
+text(.8,-.25,'100x Vertical Exaggeration','units','normalized','fontsize',12,'fontweight','bold')
+daspect([110,1,1])
+
 end

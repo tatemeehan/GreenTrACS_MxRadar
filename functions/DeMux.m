@@ -15,16 +15,16 @@ function [ Rad, trhd, trcIx, xArray ] = DeMux( Rad, trhd, chan,isLoadGPS )
         Rad=Rad(:,trcIx);
         xArray = trhd(2,trcIx);
         
-        if isLoadGPS
-            % Dead Reckoning for Antenna Midpoint Position
-            dx = trhd(21,trcIx).*sind(trhd(20,trcIx));
-            dy = trhd(21,trcIx).*cosd(trhd(20,trcIx));
-            dz = trhd(21,trcIx).*sind(trhd(17,trcIx));
-            % Overwrite Antenna Midpoint Positions in Trace Header
-            trhd(13:15,trcIx) = trhd(13:15,trcIx) + [dx;dy;dz];
-            % Distance Array Corrected to MidPoint Centers
-            trhd(16,trcIx) = trhd(16,trcIx) - trhd(21,trcIx);
-        end
+%         if isLoadGPS
+%             % Dead Reckoning for Antenna Midpoint Position
+%             dx = trhd(21,trcIx).*sind(trhd(20,trcIx));
+%             dy = trhd(21,trcIx).*cosd(trhd(20,trcIx));
+%             dz = trhd(21,trcIx).*sind(trhd(17,trcIx));
+%             % Overwrite Antenna Midpoint Positions in Trace Header
+%             trhd(13:15,trcIx) = trhd(13:15,trcIx) + [dx;dy;dz];
+%             % Distance Array Corrected to MidPoint Centers
+%             trhd(16,trcIx) = trhd(16,trcIx) - trhd(21,trcIx);
+%         end
 
 
 end

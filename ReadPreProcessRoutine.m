@@ -131,11 +131,14 @@
             nearRad = processTraceRemoval... % Processes Near Offset Data
                 (Rad{ii}(:,nearChan:nChan:end), f0, dt );
             % Remove Duplicate Static Traces
-            [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
+%             [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
+            [dupIx,staticNearChanIx] = removeStaticTraceMuck( nearRad, multiplexNtrcs, nearChan, nChan );
+            % Plot Static Trace Removal
+%             figure();imagesc(nearRad);colormap(bone)
+%             hold on; plot(staticNearChanIx,120.*ones(length(staticNearChanIx)),'rx')            
             clear('nearRad');
-            
             trhd{ii}(:,dupIx) = [];         % Remove Static Trace Headers from Multiplexed Record
-            trhd{ii}(1,:) = 1:length(trhd{ii}); % Configure Trace Indicies
+            trhd{ii}(1,:) = 1:size(trhd{ii},2); % Configure Trace Indicies
             trhd{ii}(2,:) = [0:dx:(length(trhd{ii})-1)*dx]; % Configure Distance
             Rad{ii}(:,dupIx) = [];      % Remove Static Traces from Multiplexed Data
             xArray = trhd{ii}(2,:);         % Define Configured Distance xArray
@@ -175,6 +178,12 @@
         trhd{ii}(:,dupIx) = []; % Remove Skipped Traces from Trace Header
         Rad{ii}(:,dupIx) = []; % Remove Skipped Traces from Multiplexed Data
         xArray = trhd{ii}(2,:); % Define ReConfigured Distance as xArray
+        
+        % QuickLook
+        nearRad = processTraceRemoval... % Processes Near Offset Data
+                (Rad{ii}(:,nearChan:nChan:end), f0, dt );
+            figure();imagesc(nearRad);colormap(bone);hold on; 
+         plot(round(dupIx./nChan),120.*ones(length(dupIx)),'rx')
         end
         % Gain Far Channels for Cable Attenuation
         if f0 == 500
@@ -298,7 +307,9 @@
                 
                 % Reduce Data Volume
                 if isReduceData
+                    % Yank
                     Radar{jj,ii} = Radar{jj,ii}(:,1:rmNtrc:end);
+                    % Average - todo
                     traceIx{jj,ii} = traceIx{jj,ii}(1:rmNtrc:end);
                 end
                 
@@ -335,6 +346,8 @@
         end
         % Store Travel-Time Axis
         TimeAxis{ii} = [0:dt:(dt.*(size(Radar{1,ii},1)-1))]';
+        XYZ{ii} = [trhd{ii}(10,1:nChan:end);trhd{ii}(11,1:nChan:end);...
+            trhd{ii}(12,1:nChan:end)];
         
         fprintf('Signal Processing Done \n')
         toc

@@ -24,6 +24,8 @@
     TraverseX = cell(nFiles,1);
     StackDepth = cell(nFiles,1);
     XY = cell(nFiles,1);
+    XYZ = cell(nFiles,1);
+
     
     % Estimate of Mean Annual Temperature    
     isLoadT2 = 1;
@@ -42,6 +44,8 @@
         if isLoadGPS
             % Coordinate Positions
             XY{ii} = [trhd{ii}(10,1:nChan:end);trhd{ii}(11,1:nChan:end)];
+%             XYZ{ii} = [trhd{ii}(10,1:nChan:end);trhd{ii}(11,1:nChan:end);...
+%                 trhd{ii}(12,1:nChan:end)];
             Traverse{ii} = trhd{ii}(2,1:nChan:end);
             % Distance Grid
             TraverseX{ii} = ones(length(StackZ),1)*Traverse{ii};

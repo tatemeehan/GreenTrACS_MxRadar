@@ -14,74 +14,42 @@ clear; close all; clc;
 
 % 500 MHz Data
 % GreenTrACS 2016
-% dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-4-16-Core7-Spiral';
-% dataDir = '/home/tatemeehan/GreenTracs2016/GPR_DATA/PulseEKKO/500MHz/6-2-16-Core7-Spur-W';
 
 % GreenTrACS 2017
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-18-17-SummitRouteI';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-17-17-Core16Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-16-17-Core16SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-15-17-Core15Core16Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-14-17-Core15Spiral';
+dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-13-17-Core15SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-12-17-Core14Core15Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-11-17-Core14Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-10-17-Core14SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-9-17-Core13Core14Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-8-17-Core13SpurE';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-6-17-Core12Core13Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-3-17-Core12SpurE';
-dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-2-17-Core12SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-2-17-Core12SpurW';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/6-1-17-Core11Core12Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-31-17-Core11SpurW';
-% dataDir = '/home/tatemeehan/GreenTracs2017/6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS\2017\6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-19-17-SummitRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-18-17-SummitRouteI';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-15-17-Core15Core16Traverse';
-
-% dataDir = '/home/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
-% dataDir = '/sonichome/tatemeehan/GreenTracs2017/6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS\2017\6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-13-17-Core15SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-12-17-Core14Core15Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-10-17-Core14SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-9-17-Core13Core14Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-8-17-Core13SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-7-17-Core13SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-6-17-Core12Core13Traverse';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-3-17-Core12SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-2-17-Core12SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\6-1-17-Core11Core12Traverse';
-% dataDir = '/home/tatemeehan/GreenTracs2017/5-31-17-Core11SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-31-17-Core11SpurW';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-27-17-Core11SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-26-17-Core11Spiral';
-% dataDir = '/run/media/tatemeehan/ONE/GreenTrACS2017/PulseEKKO/500MHz/5-26-17-Core11Spiral';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-24-17-Core10SpurE';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-25-17-Core10SpurW';
-% dataDir = '/run/media/tatemeehan/ONE/GreenTrACS2017/PulseEKKO/500MHz/5-26-17-Core10Core11Traverse';
-% dataDir = '/home/tatemeehan/GreenTracs2017/5-26-17-Core10Core11Traverse';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-17-17-Core9Spiral';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-11-17-Core8Test';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\500MHz\5-4-17-SummitRun';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\500MHz\5-5-17-SummitCal';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/500MHz/5-5-17-SummitCal';
-% dataDir = 'E:\GreenTrACS\GPR_DATA/PulseEKKO/500MHz/6-4-16-Core7-Spiral';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/500MHz/5-17-17-Core9Spiral';
-
-% 1GHz Data
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\1GHz\6-19-17-SummiteRouteII';
-% dataDir = 'E:\GreenTrACS2017\PulseEKKO\1GHz\6-7-17-Core13SpurW';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-17-17-Core9Spiral';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-11-17-Core8Test';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-4-17-SummitRun';
-% dataDir = 'D:\GreenTrACS\2017\GPR_DATA\PulseEKKO\1GHz\5-5-17-SummitCal';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/1GHz/5-10-17-Core8SpurE';
-% dataDir = '/home/tatemeehan/GreenTracs2017/GPR_DATA/PulseEKKO/1GHz/6-13-17-Core15SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-27-17-Core11SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-26-17-Core11Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-26-17-Core10Core11Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-25-17-Core10SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-24-17-Core10SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-23-17-Core10Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-23-17-Core9Core10Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-22-17-Core9Core10Traverse';
+% dataDir ='/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-17-17-Core9SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-17-17-Core9Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-16-17-Core9SpurW';
+% dataDir ='/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-15-17-Core8Core9Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-14-17-Core7Survey';
 
 % Add additional useful pathways
-% addpath 'E:\GreenTrACS\2017\GPR_Processing\MultiOffset\Save';
-% addpath 'E:\GreenTrACS\2017\GPR_Processing\MultiOffset\SeismicLab\SeismicLab\codes\fx';
-% addpath 'D:\GreenTrACS\2017\GPR_Processing\MultiOffset\Save';
-% addpath '/run/media/tatemeehan/RED/GreenTrACS/2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save/matData'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
-% addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
-% addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
-% addpath '/sonichome/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/SeismicLab/SeismicLab/codes/fx'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
 addpath './functions';
 addpath './supplementalData';
@@ -101,7 +69,7 @@ isLoadDepthHorizons = 1;       % Load Previously Picked Depth Horizons
 isPickDepthHorizons = 0;       % Pick Isochronous Depth Horizons
 isLoadHVA = 1;                 % Load Previous Horizon Velocity Analysis
 isLoadMxHL = 0;                % Load Previous MxHL Model Results
-isLoadGPS = 0;                 % Load GPS for MxRadar
+isLoadGPS = 1;                 % Load GPS for MxRadar
 isGreenTracsFirnCore = 1;      % Load GreenTracs Firn Core Data
 isMEaSUREs = 0;                % Load NASA MEaSUREs Surface Velocity
 
@@ -155,7 +123,7 @@ yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = 5;%[0,1,2,4,7];               % Array of data "LINE" numbers
+lineNo = [0,1,2,4,7];%[3,4,5];  %[1:5];%             % Array of data "LINE" numbers
 nFiles = length(lineNo);        % Number of Files
 nChan = 9;                      % Number of Recorded Channels
 chan =  1:nChan;                % Linear Array of Record Channels
@@ -178,9 +146,11 @@ if isLoadHVA
 end
 
 %% Import GPS Information
-addpath '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+% addpath '/home/tatemeehan/GreenTracs2017/GPS/Core15SpurW061317';
+addpath '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/geolocation/6-13-17-Core15SpurW';
 if isLoadGPS
-    load('MxRadarGPSCore15SpurW061317.mat')
+%     load('MxRadarGPSCore15SpurW061317.mat')
+load('6-13-17-Core15SpurW-GPS-LINE00_07.mat')
 end
 %% Read GPR Data
 if isReadNC
@@ -275,6 +245,7 @@ if isSWEDISH && ~isLoadHVA
         k = 100; % Number of Radar Estimates to Estimate Core Site Average
         iceCoreFileIx = 1;
         iceCoreIx = 1:k;
+        warning('Undefined Firn Core!.. Using default accumulation 0.3 mwe and age 2.5 yrs.')
     end
     
     % Toggle Inversion Scheme
@@ -495,9 +466,10 @@ if isPickDepthHorizons
     
 elseif isLoadDepthHorizons
     cd '/home/tatemeehan/GreenTracs2017/MXHL';
-    IRH = load('depthPicksCore15SpurMaster072919.mat');
+%     IRH = load('depthPicksCore15SpurMaster072919.mat');
+    IRH = load('depthPicksCore15SpurMaster.mat');
     depthPick = [IRH.depthPick];
-    clear IRH
+%     clear IRH
     cd(workDir)
     fprintf('Isochrone Reflection Horizon Picks Loaded \n')
     disp(' ')
@@ -508,7 +480,7 @@ end
 %         fprintf('Begin Isochrone Model Update & Trace Flattening \n')
 %         tic
 %         % Calculate Stratigraphic Age Residual
-        ReCalculateAgeResidual
+        ReCalculateAgeResidual        
 %         % Update Model with Perturbations
 %         UpdateAgeHorizons
 %         
@@ -560,15 +532,17 @@ cd(workDir)
     
     % Save Modeled Output
     if isSaveMxHL
-        MxHLFilename = 'GTC15SpurWMxHL_061919.mat';
-        GTC15SpurWMxHL = struct('Traverse',{Traverse},'DepthAxis',{DepthAxis},...
-            'RadarDepth',{RadarDepth},'AgeModel',{AgeModel},...
+        MxHLFilename = 'GTC15SpurWMxHL_090320.mat';
+        GTC15SpurWMxHL = struct('DistanceAxis',{Traverse},'DepthAxis',{DepthAxis},...
+            'RadarDepth',{RadarDepth},'TimeAxis',{TimeAxis},'RadarStack',{RadarStack},'DepositionAxis',{DepositionAxis},'RadarDeposition',{RadarDeposition},'AgeModel',{bestAgeModel},...
             'DensityModel',{DensityModel},'DensityAnomalyModel',{DensityAnomalyModel},...
             'AvgDensityModel',{AvgDensityModel},'MeanDensityDeviation',...
             {MeanDensityDeviation},'SurfaceDensityDeviation',{SurfaceDensityDeviation},...
-            'IsoChrones', {Isochrones},'Ages',{Ages},'AverageAccumulation',{AverageAccumulation});
+            'IsochroneIx',{IRH.depthPick},'DepthIsoChrones', {depthPick},'AgeIsochrones',{agePick},'SMBmodel',{instantSMB},'AverageAccumulation',{AverageAccumulation3},...
+            'VarAccumulation',{varAccumulation3},'iceCoreIx',{iceCoreIx});
+        cd '/home/tatemeehan/GreenTracs2017/MXHL/'
         save(MxHLFilename,'-struct','GTC15SpurWMxHL','-v7.3');
-
+        cd(workDir)
     end
     
 %% Radar Imagery and Snow Data Visualization
