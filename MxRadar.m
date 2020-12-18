@@ -45,14 +45,23 @@ dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/50
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-16-17-Core9SpurW';
 % dataDir ='/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-15-17-Core8Core9Traverse';
 % dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-14-17-Core7Survey';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-14-17-Core7Core8Traverse';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-12-17-Core8SpurW';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-11-17-Core8Spiral';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-10-17-Core8SpurE';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-9-17-Core8C2';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-8-17-Core8C1';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-7-17-Core8B';
+% dataDir = '/SNOWDATA/NSF_GREENTRACS/GreenTrACS2017/ArcticDataCenter/PulseEKKO/500MHz/rawNC/5-6-17-Core8A';
 
 % Add additional useful pathways
-addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
+% addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save'
 addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/Save/matData'
-addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
-addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
+% addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/TM'
+% addpath '/home/tatemeehan/GreenTracs2017/GPR_Processing/MultiOffset/time2depth'
 addpath './functions';
 addpath './supplementalData';
+addpath './colorMaps';
 workDir = pwd;
 
 %% Control Floe
@@ -100,41 +109,40 @@ else
 end
 
 %% Import Meta Data
-% load('CalibrationChannelShiftTrough500MHz2017.mat');
-load('CalibrationChannelShiftPeak500MHz2017.mat');
-% load('CalibrationChannelShiftTrough1GHz2017.mat');
-chanShift = Calibration(1).chanShift; % Import chanShift
-% Import Cool Colormap
-load(['LateNite.mat']);load(['Smoke.mat']); load(['yet_white.mat']);
-load(['SplitJet.mat']);
-yet_black = [[1,1,1];[.9463,.9463,1];yet_white(2,:);[(yet_white(2,1:2)-yet_white(3,1:2))./2 + yet_white(3,1:2),...
-    1];yet_white(3:end,:);[linspace(yet_white(end,1)-.0625,0,3)',zeros(3,1),zeros(3,1)]];
 
-    % Load ColorBrewer 
-    set(0,'DefaultAxesFontName','FreeSerif')
-    set(0,'DefaultTextFontName','FreeSerif')
-    [colorbrew , ~, ~] = brewermap(256,'RdYlBu');
-    colorbrew=flipud(colorbrew);
-    colorQ = colorbrew(round(quantile(1:256,[0.85,0.5,0.15])),:);
-    c1 = colorQ(1,:);
-    c2 = colorQ(2,:);
-    c3 = colorQ(3,:);
+% Load Calibration Shifts
+chanShift = csvread(['CalibrationChannelShiftPeak500MHz2017.csv']);
+
+% Load Cool Colormaps
+LateNite = csvread('LateNite.csv'); Smoke = csvread('Smoke.csv');
+yet_white = csvread('yet_white.csv'); yet_black = csvread('yet_black.csv');
+SplitJet = csvread('SplitJet.csv'); colorbrew = csvread('RdYlBu.csv');
+colorbrew=flipud(colorbrew);
+colorQ = colorbrew(round(quantile(1:256,[0.85,0.5,0.15])),:);
+c1 = colorQ(1,:);
+c2 = colorQ(2,:);
+c3 = colorQ(3,:);
+
+% Set Fancy Fonts
+set(0,'DefaultAxesFontName','FreeSerif')
+set(0,'DefaultTextFontName','FreeSerif')
+
     
 
 TraverseDistance = [15,15,15];  % Approx. Distance of Radar Files [km]
 fileNames = dir([dataDir,'/','*.nc']);
-lineNo = [0,1,2,4,7];%[3,4,5];  %[1:5];%             % Array of data "LINE" numbers
-nFiles = length(lineNo);        % Number of Files
-nChan = 9;                      % Number of Recorded Channels
-chan =  1:nChan;                % Linear Array of Record Channels
-liveChan = chan;
+lineNo = [0,1,2,4,7];%[0:2,4:5];%1:5;%[0,2];%%[3,4,5];  %[1:5];%             % Array of data "LINE" numbers
+% nFiles = length(lineNo);        % Number of Files
+% nChan = 9;                      % Number of Recorded Channels
+% chan =  1:nChan;                % Linear Array of Record Channels
+% liveChan = chan;
 
-% Establish Tx Rx Geometry for CMP Gathering
-nTx = 3;               % Number of Transmitters in Sequence
-nRx = 3;               % Number of Receivers in Sequence
-
-% Allocate Memory
-time = cell(1,nFiles);
+% % Establish Tx Rx Geometry for CMP Gathering
+% nTx = 3;               % Number of Transmitters in Sequence
+% nRx = 3;               % Number of Receivers in Sequence
+% 
+% % Allocate Memory
+% time = cell(1,nFiles);
 
 %% Load HVA Results
 if isLoadHVA

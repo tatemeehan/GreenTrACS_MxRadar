@@ -14,6 +14,12 @@
 % trace stacking are applied. There are Various filter parameters decided
 % in this function.
 
+% Allocation for Data and Headers
+nFiles = length(lineNo);        % Number of Files
+
+% Allocate time?
+time = cell(1,nFiles);
+
     Rad = cell(1,nFiles);
     trhd = cell(1,nFiles);
 %     GPS = cell(1,nFiles);
@@ -38,6 +44,9 @@
         dt = trhd{ii}(7,1)/1000; % [ns]
         dx = diff(trhd{ii}(2,1:2)); % [m]
         % Need to Automate Offset Array from .nc File
+        nChan = numel(unique(trhd{ii}(23,:)));% Number of Recorded Channels
+        chan =  1:nChan;                % Linear Array of Record Channels
+        liveChan = chan;
 %         offsetArray = unique(trhd{ii}(22,1:100));
 
         % Configure GPS
@@ -93,10 +102,14 @@
                 % 9 Channel Offsets
                 txGeo = [0, 0, 0, 1.33, 1.33, 1.33, 2.67, 2.67, 2.67]; % Tx Sequence & Absolute Position
                 rxGeo = [4, 8, 12, 4, 8, 12, 4, 8, 12]; % Rx Sequence & Absolute Position
-            elseif nChan == 6 && ~isKill
+            elseif nChan == 6 %&& ~isKill
                 % 6 Channel Offsets
                 txGeo = [1.33, 1.33, 1.33, 2.67, 2.67, 2.67]; % Tx Sequence & Absolute Position
                 rxGeo = [4, 8, 12, 4, 8, 12]; % Rx Sequence & Absolute Position
+                if length(chanShift) ~= nChan
+                    % Remove Channel 1, 2, & 3 Shifts (Tx1 malfunction)
+                    chanShift(1:3) = [];
+                end
             end
             % 1 GHz Offsets
         elseif f0 == 1000
@@ -129,7 +142,7 @@
             fprintf('Begin Static Trace Removal \n')
             tic
             nearRad = processTraceRemoval... % Processes Near Offset Data
-                (Rad{ii}(:,nearChan:nChan:end), f0, dt );
+                (Rad{ii}(:,nearChan:nChan:end), f0, dt, nearOffset );
             % Remove Duplicate Static Traces
 %             [dupIx,staticNearChanIx] = removeStaticTrace( nearRad, multiplexNtrcs, nearChan, nChan );
             [dupIx,staticNearChanIx] = removeStaticTraceMuck( nearRad, multiplexNtrcs, nearChan, nChan );
@@ -180,10 +193,10 @@
         xArray = trhd{ii}(2,:); % Define ReConfigured Distance as xArray
         
         % QuickLook
-        nearRad = processTraceRemoval... % Processes Near Offset Data
-                (Rad{ii}(:,nearChan:nChan:end), f0, dt );
-            figure();imagesc(nearRad);colormap(bone);hold on; 
-         plot(round(dupIx./nChan),120.*ones(length(dupIx)),'rx')
+%         nearRad = processTraceRemoval... % Processes Near Offset Data
+%                 (Rad{ii}(:,nearChan:nChan:end), f0, dt );
+%             figure();imagesc(nearRad);colormap(bone);hold on; 
+%          plot(round(dupIx./nChan),120.*ones(length(dupIx)),'rx')
         end
         % Gain Far Channels for Cable Attenuation
         if f0 == 500
@@ -195,10 +208,11 @@
         if isKill
             if ii == 1
                 killChan = [7];         % Kill Channel Number
-                liveChan(killChan) = [];% Array of Live Channels
+%                 liveChan(killChan) = [];% Array of Live Channels
                 % Update Killed Channel Shifts
                 chanShift(killChan) = [];
             end
+            liveChan(killChan) = [];% Array of Live Channels
             killIx = find(ismember(trhd{ii}(23,:),killChan));
             % Kill Traces
             Rad{ii}(:,killIx) = [];  
@@ -314,18 +328,33 @@
                 end
                 
                 % Create Temporary Two-Way Time
-                tmpTime = [0:dt:(size(Radar{jj,ii},1)-(1+padding))*dt];
-                
+                % Adapted 10-20-2020
+                % Changes Exteneded the Data Imagery, Verify these changes
+                % in HVA
+                maxShift = abs(min(chanShift(chanShift<0)));
+                if isempty(maxShift)
+                    maxShift = 0;
+                end
+                tmpTime = [0:dt:(size(Radar{jj,ii},1)+(maxShift-1))*dt];
+%                 tmpTime = [0:dt:(size(Radar{jj,ii},1)-(1+padding))*dt];
                 % Apply Systematic Channel Shifts
                 if chanShift(jj) < 0
                     tmp = padarray(Radar{jj,ii},[abs(chanShift(jj)),0],...
                         mean(Radar{jj,ii}(1,:)),'pre');
+                    % 10-20-2020
+                    tmp = padarray(tmp,[maxShift+chanShift(jj),0],...
+                        mean(Radar{jj,ii}(1,:)),'post');
                     Radar{jj, ii} = tmp(1:length(tmpTime),:);
 
                 elseif chanShift(jj) > 0
-                    tmp = padarray(Radar{jj,ii},[abs(chanShift(jj)),0],...
+%                     tmp = padarray(Radar{jj,ii},[abs(chanShift(jj)),0],...
+%                         mean(Radar{jj,ii}(1,:)),'post');
+%                     Radar{jj,ii} = tmp(abs(chanShift(jj))+1:end-padding,:);
+                    % 10-20-2020
+                    tmp = padarray(Radar{jj,ii},[chanShift(jj)+maxShift,0],...
                         mean(Radar{jj,ii}(1,:)),'post');
-                    Radar{jj,ii} = tmp(abs(chanShift(jj))+1:end-padding,:);
+                    Radar{jj,ii} = tmp(abs(chanShift(jj))+1:end,:);
+
                    
                 else
                     Radar{jj,ii} = Radar{jj,ii};
@@ -337,9 +366,12 @@
 %                 fprintf(['Begin Signal Processing in Common-Offset Domain ',...
 %                     filename, ' CHAN0', num2str(jj),'\n'])
 
-                Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt );
-
+                Radar{jj,ii} = processCommonOffset(Radar{jj,ii}, f0, dt, offsetArray(jj) );
         end
+%         for jj = 1:nChan
+%                         % QuickLook
+%                 figure(); imagesc(Radar{jj,ii});colormap(bone)
+%         end
         if isReduceData
             tmpIx = sort(cat(2,traceIx{:,ii}));
             trhd{ii} = trhd{ii}(:,tmpIx);
