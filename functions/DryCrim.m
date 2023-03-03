@@ -25,7 +25,7 @@ Vi = Va/sqrt(Ki);   % Velocity of Ice [m/s]
 pi = 917;        % Pure Ice Density, Herron and Langway (1980)
 
 % Condition Units of Velocity [m/ns] to [m/s]
-if Vf < 1E8
+if mean(Vf(:)) < 1E8
     Vf = Vf.*(10^9); 
 end
 
